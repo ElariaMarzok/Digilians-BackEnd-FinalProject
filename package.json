@@ -1,0 +1,31 @@
+{
+  "name": "digilians-backend-finalproject",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sandy-Magdy/Digilians-BackEnd-FinalProject.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Sandy-Magdy/Digilians-BackEnd-FinalProject/issues"
+  },
+  "homepage": "https://github.com/Sandy-Magdy/Digilians-BackEnd-FinalProject#readme",
+  "description": "Digilians backend with JWT authentication (register, login, logout)",
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "dotenv": "^16.5.0",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.14.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
