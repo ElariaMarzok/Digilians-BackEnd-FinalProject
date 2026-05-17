@@ -1,3 +1,4 @@
+import User from "../models/User.js";
 import StudentProfile from "../models/StudentProfile.js";
 import CommanderProfile from "../models/CommanderProfile.js";
 
@@ -70,5 +71,53 @@ export const getOrCreateCommanderProfile = async (user) => {
         notes: profile.notes,
         createdAt: profile.createdAt,
         updatedAt: profile.updatedAt,
+    };
+};
+
+export const searchStudentsForCommander = async ({ search = "" }) => {
+    const trimmedSearch = search.trim();
+
+    const query = {
+        role: "student",
+    };
+
+    if (trimmedSearch) {
+        query.$or = [
+            { name: { $regex: trimmedSearch, $options: "i" } },
+            { email: { $regex: trimmedSearch, $options: "i" } },
+            { militaryId: { $regex: trimmedSearch, $options: "i" } },
+            { phoneNumber: { $regex: trimmedSearch, $options: "i" } },
+        ];
+    }
+
+    const students = await User.find(query)
+        .select("-password")
+        .sort({ createdAt: -1 })
+        .limit(50);
+
+    return students.map((student) => formatUserBasicData(student));
+};
+
+export const getStudentProfileSummaryForCommander = async (studentId) => {
+    const student = await User.findOne({
+        _id: studentId,
+        role: "student",
+    }).select("-password");
+
+    if (!student) {
+        const err = new Error("Student not found");
+        err.statusCode = 404;
+        throw err;
+    }
+
+    const profile = await getOrCreateStudentProfile(student);
+
+    return {
+        ...profile,
+        summary: {
+            behaviorGrade: profile.grades.behavior,
+            absenceDays: profile.attendance.absenceDays,
+            status: profile.status,
+        },
     };
 };
