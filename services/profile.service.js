@@ -74,6 +74,35 @@ export const getOrCreateCommanderProfile = async (user) => {
     };
 };
 
+const escapeRegex = (value) => {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+};
+
+const buildArabicFlexibleRegex = (value) => {
+    const arabicGroups = {
+        ا: "[اأإآٱ]",
+        أ: "[اأإآٱ]",
+        إ: "[اأإآٱ]",
+        آ: "[اأإآٱ]",
+        ٱ: "[اأإآٱ]",
+
+        ي: "[يىئ]",
+        ى: "[يىئ]",
+        ئ: "[يىئ]",
+
+        ه: "[هة]",
+        ة: "[هة]",
+
+        و: "[وؤ]",
+        ؤ: "[وؤ]",
+    };
+
+    return value
+        .split("")
+        .map((char) => arabicGroups[char] || escapeRegex(char))
+        .join("");
+};
+
 export const searchStudentsForCommander = async ({ search = "" }) => {
     const trimmedSearch = search.trim();
 
@@ -82,11 +111,28 @@ export const searchStudentsForCommander = async ({ search = "" }) => {
     };
 
     if (trimmedSearch) {
+        const flexibleArabicText = buildArabicFlexibleRegex(trimmedSearch);
+
+        // Search names from the beginning only:
+        // "احمد" finds "أحمد محمد علي"
+        // "محمد" does not find "أحمد محمد علي"
+        // "ي" finds names that start with ي only
+        const nameStartsWithRegex = new RegExp(
+            `^${flexibleArabicText}`,
+            "i"
+        );
+
+        // For militaryId, email, and phone we still allow contains search
+        const normalContainsRegex = new RegExp(
+            escapeRegex(trimmedSearch),
+            "i"
+        );
+
         query.$or = [
-            { name: { $regex: trimmedSearch, $options: "i" } },
-            { email: { $regex: trimmedSearch, $options: "i" } },
-            { militaryId: { $regex: trimmedSearch, $options: "i" } },
-            { phoneNumber: { $regex: trimmedSearch, $options: "i" } },
+            { name: nameStartsWithRegex },
+            { email: normalContainsRegex },
+            { militaryId: normalContainsRegex },
+            { phoneNumber: normalContainsRegex },
         ];
     }
 
