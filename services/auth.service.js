@@ -1,18 +1,17 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
-
 const generateToken = (userId) => {
     return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
         expiresIn: process.env.JWT_EXPIRES_IN || "7d",
     });
 };
 
-
 const sanitizeUser = (user) => ({
     _id: user._id,
     name: user.name,
     email: user.email,
+    militaryId: user.militaryId,
     role: user.role,
     image: user.image,
     phoneNumber: user.phoneNumber,
@@ -21,14 +20,30 @@ const sanitizeUser = (user) => ({
     createdAt: user.createdAt,
 });
 
+export const registerUser = async ({
+    name,
+    email,
+    password,
+    role,
+    phoneNumber,
+    militaryId,
+}) => {
+    const existingEmail = await User.findOne({ email });
 
-export const registerUser = async ({ name, email, password, role, phoneNumber }) => {
-
-    const existing = await User.findOne({ email });
-    if (existing) {
+    if (existingEmail) {
         const err = new Error("Email already registered");
         err.statusCode = 409;
         throw err;
+    }
+
+    if (militaryId) {
+        const existingMilitaryId = await User.findOne({ militaryId });
+
+        if (existingMilitaryId) {
+            const err = new Error("Military ID already registered");
+            err.statusCode = 409;
+            throw err;
+        }
     }
 
     const user = await User.create({
@@ -37,12 +52,16 @@ export const registerUser = async ({ name, email, password, role, phoneNumber })
         password,
         ...(role && { role }),
         ...(phoneNumber && { phoneNumber }),
+        ...(militaryId && { militaryId }),
         isRegistered: true,
     });
 
     const token = generateToken(user._id);
 
-    return { token, user: sanitizeUser(user) };
+    return {
+        token,
+        user: sanitizeUser(user),
+    };
 };
 
 export const loginUser = async ({ email, password }) => {
@@ -55,6 +74,7 @@ export const loginUser = async ({ email, password }) => {
     }
 
     const isMatch = await user.matchPassword(password);
+
     if (!isMatch) {
         const err = new Error("Invalid email or password");
         err.statusCode = 401;
@@ -63,5 +83,8 @@ export const loginUser = async ({ email, password }) => {
 
     const token = generateToken(user._id);
 
-    return { token, user: sanitizeUser(user) };
+    return {
+        token,
+        user: sanitizeUser(user),
+    };
 };
