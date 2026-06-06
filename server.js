@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-dotenv.config();
+dotenv.config({ override: true });
 
 import express from "express";
 import cors from "cors";
@@ -11,22 +11,22 @@ import profileRouter from "./routes/profile.routes.js";
 const app = express();
 
 app.use(
-    cors({
-        origin: (origin, callback) => {
-            const isLocalhost =
-                !origin ||
-                /^http:\/\/localhost:\d+$/.test(origin) ||
-                /^http:\/\/127\.0\.0\.1:\d+$/.test(origin);
+  cors({
+    origin: (origin, callback) => {
+      const isLocalhost =
+        !origin ||
+        /^http:\/\/localhost:\d+$/.test(origin) ||
+        /^http:\/\/127\.0\.0\.1:\d+$/.test(origin);
 
-            if (isLocalhost) {
-                callback(null, true);
-                return;
-            }
+      if (isLocalhost) {
+        callback(null, true);
+        return;
+      }
 
-            callback(new Error("Not allowed by CORS"));
-        },
-        credentials: true,
-    })
+      callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  }),
 );
 
 app.use(express.json());
@@ -35,25 +35,43 @@ app.use("/api/auth", authRouter);
 app.use("/api/profile", profileRouter);
 
 app.get("/", (req, res) => {
-    res.json({
-        message: "Digilians API",
-        status: "running",
-        version: "1.0.0",
-    });
+  res.json({
+    message: "Digilians API",
+    status: "running",
+    version: "1.0.0",
+  });
 });
 
 app.use((req, res) => {
-    res.status(404).json({
-        success: false,
-        message: `Route ${req.originalUrl} not found`,
-    });
+  res.status(404).json({
+    success: false,
+    message: `Route ${req.originalUrl} not found`,
+  });
 });
 
 const PORT = process.env.PORT || 5000;
-const MONGO_URI = process.env.MONGO_URI;
+const envMongoUri = process.env.MONGO_URI;
+const isDefaultPlaceholder =
+  envMongoUri && envMongoUri.includes("USERNAME:PASSWORD");
+
+const MONGO_URI =
+  envMongoUri && !isDefaultPlaceholder
+    ? envMongoUri
+    : "mongodb://127.0.0.1:27017/digilians";
+
+if (!envMongoUri || isDefaultPlaceholder) {
+  console.warn(
+    "Warning: MONGO_URI is not configured or still using the placeholder. Falling back to local MongoDB at mongodb://127.0.0.1:27017/digilians",
+  );
+}
+
+const connectionTarget = MONGO_URI.includes("127.0.0.1")
+  ? "local MongoDB"
+  : "remote MongoDB";
+console.log(`📌 Connecting to ${connectionTarget}`);
 
 connectDB(MONGO_URI).then(() => {
-    app.listen(PORT, () => {
-        console.log(`✅ Server running on http://localhost:${PORT}`);
-    });
+  app.listen(PORT, () => {
+    console.log(`✅ Server running on http://localhost:${PORT}`);
+  });
 });
