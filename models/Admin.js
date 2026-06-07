@@ -1,72 +1,49 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
-import crypto from "crypto";
 
+/**
+ * [2] admins — تسجيل دخول الأدمن فقط (Sandy@gmail.com)
+ */
 const adminSchema = new mongoose.Schema(
   {
-    name: {
-      type: String,
-      required: [true, "Name is required"],
-      trim: true,
-    },
-
     email: {
       type: String,
-      required: [true, "Email is required"],
+      required: true,
       unique: true,
       lowercase: true,
       trim: true,
       match: [/^\S+@\S+\.\S+$/, "Please provide a valid email"],
     },
-
-    militaryId: {
-      type: String,
-      trim: true,
-      unique: true,
-      sparse: true,
-    },
-
     password: {
       type: String,
-      required: [true, "Password is required"],
-      minlength: [6, "Password must be at least 6 characters"],
+      required: true,
+      minlength: 6,
     },
-
+    name: {
+      type: String,
+      trim: true,
+      default: "Sandy Admin",
+    },
     role: {
       type: String,
       enum: ["admin"],
       default: "admin",
     },
-
     phoneNumber: {
       type: String,
       trim: true,
     },
-
     image: {
       type: String,
       default:
-        "https://ui-avatars.com/api/?name=User&background=eee&color=888&size=160",
+        "https://ui-avatars.com/api/?name=Admin&background=eee&color=888&size=160",
     },
-
-    title: String,
-
-    bio: String,
-
-    preferredLanguage: {
-      type: [String],
-      enum: ["arabic", "english"],
-      default: ["english"],
-    },
-
     isRegistered: {
       type: Boolean,
-      default: false,
+      default: true,
     },
   },
-  {
-    timestamps: true,
-  },
+  { timestamps: true },
 );
 
 adminSchema.pre("save", async function (next) {
@@ -82,20 +59,7 @@ adminSchema.pre("save", async function (next) {
 });
 
 adminSchema.methods.matchPassword = async function (enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.password);
-};
-
-adminSchema.methods.generatePasswordReset = function () {
-  const token = crypto.randomBytes(20).toString("hex");
-
-  this.resetPasswordToken = crypto
-    .createHash("sha256")
-    .update(token)
-    .digest("hex");
-
-  this.resetPasswordExpires = Date.now() + 3600000; // 1 hour
-
-  return token;
+  return bcrypt.compare(enteredPassword, this.password);
 };
 
 const Admin = mongoose.model("Admin", adminSchema, "admins");

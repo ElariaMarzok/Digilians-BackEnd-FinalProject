@@ -1,169 +1,131 @@
 import User from "../models/User.js";
-import StudentProfile from "../models/StudentProfile.js";
-import CommanderProfile from "../models/CommanderProfile.js";
+import PermitStudentDirectory from "../models/PermitStudentDirectory.js";
 
-const formatUserBasicData = (user) => {
-    return {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        militaryId: user.militaryId,
-        role: user.role,
-        image: user.image,
-        phoneNumber: user.phoneNumber,
-    };
-};
+const formatUserBasicData = (user, directoryEntry = null) => ({
+  _id: user._id,
+  name: directoryEntry?.name || user.name,
+  email: user.email,
+  militaryId: directoryEntry?.militaryId || "",
+  role: "student",
+  image: user.image,
+  phoneNumber: user.phoneNumber,
+});
+
+const defaultStudentProfile = (user, directoryEntry) => ({
+  student: formatUserBasicData(user, directoryEntry),
+  department: "",
+  specialization: "",
+  course: "",
+  specializationDuration: "غير محدد",
+  status: "active",
+  attendance: { absenceDays: 0 },
+  grades: {
+    behavior: 100,
+    history: [{ label: "البداية", value: 100 }],
+  },
+  notes: "",
+});
 
 export const getOrCreateStudentProfile = async (user) => {
-    let profile = await StudentProfile.findOne({ user: user._id });
+  const directoryEntry = await PermitStudentDirectory.findOne({
+    email: user.email,
+  });
 
-    if (!profile) {
-        profile = await StudentProfile.create({
-            user: user._id,
-            specializationDuration: "غير محدد",
-            attendance: {
-                absenceDays: 0,
-            },
-            grades: {
-                behavior: 100,
-                history: [
-                    {
-                        label: "البداية",
-                        value: 100,
-                    },
-                ],
-            },
-        });
-    }
-
-    return {
-        student: formatUserBasicData(user),
-        department: profile.department,
-        specialization: profile.specialization,
-        course: profile.course,
-        specializationDuration: profile.specializationDuration,
-        status: profile.status,
-        attendance: profile.attendance,
-        grades: profile.grades,
-        notes: profile.notes,
-        createdAt: profile.createdAt,
-        updatedAt: profile.updatedAt,
-    };
+  return defaultStudentProfile(user, directoryEntry);
 };
 
-export const getOrCreateCommanderProfile = async (user) => {
-    let profile = await CommanderProfile.findOne({ user: user._id });
+export const getOrCreateCommanderProfile = async (user) => ({
+  commander: {
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    militaryId: "",
+    role: user.role,
+    image: user.image,
+    phoneNumber: user.phoneNumber,
+  },
+  rank: "",
+  department: "",
+  responsibility: "مسؤول شؤون الطلاب",
+  permissionsScope: "department",
+  notes: "",
+});
 
-    if (!profile) {
-        profile = await CommanderProfile.create({
-            user: user._id,
-            responsibility: "مسؤول شؤون الطلاب",
-            permissionsScope: "department",
-        });
-    }
-
-    return {
-        commander: formatUserBasicData(user),
-        rank: profile.rank,
-        department: profile.department,
-        responsibility: profile.responsibility,
-        permissionsScope: profile.permissionsScope,
-        notes: profile.notes,
-        createdAt: profile.createdAt,
-        updatedAt: profile.updatedAt,
-    };
-};
-
-const escapeRegex = (value) => {
-    return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-};
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const buildArabicFlexibleRegex = (value) => {
-    const arabicGroups = {
-        ا: "[اأإآٱ]",
-        أ: "[اأإآٱ]",
-        إ: "[اأإآٱ]",
-        آ: "[اأإآٱ]",
-        ٱ: "[اأإآٱ]",
+  const arabicGroups = {
+    ا: "[اأإآٱ]",
+    أ: "[اأإآٱ]",
+    إ: "[اأإآٱ]",
+    آ: "[اأإآٱ]",
+    ٱ: "[اأإآٱ]",
+    ي: "[يىئ]",
+    ى: "[يىئ]",
+    ئ: "[يىئ]",
+    ه: "[هة]",
+    ة: "[هة]",
+    و: "[وؤ]",
+    ؤ: "[وؤ]",
+  };
 
-        ي: "[يىئ]",
-        ى: "[يىئ]",
-        ئ: "[يىئ]",
-
-        ه: "[هة]",
-        ة: "[هة]",
-
-        و: "[وؤ]",
-        ؤ: "[وؤ]",
-    };
-
-    return value
-        .split("")
-        .map((char) => arabicGroups[char] || escapeRegex(char))
-        .join("");
+  return value
+    .split("")
+    .map((char) => arabicGroups[char] || escapeRegex(char))
+    .join("");
 };
 
 export const searchStudentsForCommander = async ({ search = "" }) => {
-    const trimmedSearch = search.trim();
+  const trimmedSearch = search.trim();
+  const query = {};
 
-    const query = {
-        role: "student",
-    };
+  if (trimmedSearch) {
+    const flexibleArabicText = buildArabicFlexibleRegex(trimmedSearch);
+    const nameStartsWithRegex = new RegExp(`^${flexibleArabicText}`, "i");
+    const normalContainsRegex = new RegExp(escapeRegex(trimmedSearch), "i");
 
-    if (trimmedSearch) {
-        const flexibleArabicText = buildArabicFlexibleRegex(trimmedSearch);
+    query.$or = [
+      { name: nameStartsWithRegex },
+      { email: normalContainsRegex },
+      { militaryId: normalContainsRegex },
+    ];
+  }
 
-        // Search names from the beginning only:
-        // "احمد" finds "أحمد محمد علي"
-        // "محمد" does not find "أحمد محمد علي"
-        // "ي" finds names that start with ي only
-        const nameStartsWithRegex = new RegExp(
-            `^${flexibleArabicText}`,
-            "i"
-        );
+  const students = await PermitStudentDirectory.find(query)
+    .sort({ createdAt: -1 })
+    .limit(50);
 
-        // For militaryId, email, and phone we still allow contains search
-        const normalContainsRegex = new RegExp(
-            escapeRegex(trimmedSearch),
-            "i"
-        );
-
-        query.$or = [
-            { name: nameStartsWithRegex },
-            { email: normalContainsRegex },
-            { militaryId: normalContainsRegex },
-            { phoneNumber: normalContainsRegex },
-        ];
-    }
-
-    const students = await User.find(query)
-        .select("-password")
-        .sort({ createdAt: -1 })
-        .limit(50);
-
-    return students.map((student) => formatUserBasicData(student));
+  return students.map((student) => ({
+    _id: student._id,
+    name: student.name,
+    email: student.email,
+    militaryId: student.militaryId,
+    role: "student",
+  }));
 };
 
 export const getStudentProfileSummaryForCommander = async (studentId) => {
-    const student = await User.findOne({
-        _id: studentId,
-        role: "student",
-    }).select("-password");
+  const directoryEntry = await PermitStudentDirectory.findById(studentId);
 
-    if (!student) {
-        const err = new Error("Student not found");
-        err.statusCode = 404;
-        throw err;
-    }
+  if (!directoryEntry) {
+    const err = new Error("Student not found");
+    err.statusCode = 404;
+    throw err;
+  }
 
-    const profile = await getOrCreateStudentProfile(student);
+  const user = await User.findOne({ email: directoryEntry.email });
 
-    return {
-        ...profile,
-        summary: {
-            behaviorGrade: profile.grades.behavior,
-            absenceDays: profile.attendance.absenceDays,
-            status: profile.status,
-        },
-    };
+  const profile = defaultStudentProfile(
+    user || { email: directoryEntry.email, name: directoryEntry.name },
+    directoryEntry,
+  );
+
+  return {
+    ...profile,
+    summary: {
+      behaviorGrade: profile.grades.behavior,
+      absenceDays: profile.attendance.absenceDays,
+      status: profile.status,
+    },
+  };
 };

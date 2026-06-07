@@ -1,19 +1,22 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import Admin from "../models/Admin.js";
+import { ADMIN_ACCOUNT } from "../data/testAccounts.js";
+import {
+  ensureStudentInDirectory,
+  buildStudentAuthProfile,
+} from "./studentDirectory.service.js";
 
-const adminEmail = "Sandy@gmail.com";
-const adminEmailLower = adminEmail.toLowerCase();
-const adminPassword = "Sandy123@";
+const adminEmailLower = ADMIN_ACCOUNT.email.toLowerCase();
+const adminPassword = ADMIN_ACCOUNT.password;
 
-const generateToken = (userId) => {
-  return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
+const generateToken = (userId, accountType = "user") => {
+  return jwt.sign({ id: userId, accountType }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || "7d",
   });
 };
 
 const validatePassword = (password) => {
-  // Reject digits-only passwords
   const numberCount = (password.match(/\d/g) || []).length;
   const letterCount = (password.match(/[A-Za-z]/g) || []).length;
 
@@ -25,12 +28,10 @@ const validatePassword = (password) => {
     return "كلمة المرور يجب أن تحتوي على 4 أحرف على الأقل";
   }
 
-  // Check if starts with capital letter
   if (!/^[A-Z]/.test(password)) {
     return "كلمة المرور يجب أن تبدأ بحرف كابيتال";
   }
 
-  // Check length (4-15 characters)
   if (password.length < 4 || password.length > 15) {
     return "كلمة المرور يجب أن تكون بين 4 و 15 حرفًا";
   }
@@ -38,24 +39,23 @@ const validatePassword = (password) => {
   if (numberCount === 0) {
     return "كلمة المرور يجب أن تحتوي على رقم واحد على الأقل";
   }
+
   if (numberCount > 10) {
     return "كلمة المرور يجب أن تحتوي على 10 أرقام على الأكثر";
   }
 
-  return null; // Valid password
+  return null;
 };
 
-const sanitizeUser = (user) => ({
-  _id: user._id,
-  name: user.name,
-  email: user.email,
-  militaryId: user.militaryId,
-  role: user.role,
-  image: user.image,
-  phoneNumber: user.phoneNumber,
-  preferredLanguage: user.preferredLanguage,
-  isRegistered: user.isRegistered,
-  createdAt: user.createdAt,
+const sanitizeUser = (account, role = "student") => ({
+  _id: account._id,
+  name: account.name,
+  email: account.email,
+  role: account.role || role,
+  image: account.image,
+  phoneNumber: account.phoneNumber,
+  isRegistered: account.isRegistered,
+  createdAt: account.createdAt,
 });
 
 export const registerUser = async ({
@@ -64,14 +64,13 @@ export const registerUser = async ({
   password,
   role,
   phoneNumber,
-  militaryId,
   adminCode,
 }) => {
   const normalizedEmail = email ? String(email).toLowerCase().trim() : "";
-  const existingRegularUser = await User.findOne({ email: normalizedEmail });
-  const existingAdminUser = await Admin.findOne({ email: normalizedEmail });
+  const existingUser = await User.findOne({ email: normalizedEmail });
+  const existingAdmin = await Admin.findOne({ email: normalizedEmail });
 
-  if (existingRegularUser || existingAdminUser) {
+  if (existingUser || existingAdmin) {
     const err = new Error("Email already registered");
     err.statusCode = 409;
     throw err;
@@ -89,26 +88,12 @@ export const registerUser = async ({
     throw err;
   }
 
-  // Validate password
   const passwordError = validatePassword(password);
   if (passwordError) {
     const err = new Error(passwordError);
     err.statusCode = 400;
     throw err;
   }
-
-  if (militaryId) {
-    const existingMilitaryId = await User.findOne({ militaryId });
-
-    if (existingMilitaryId) {
-      const err = new Error("Military ID already registered");
-      err.statusCode = 409;
-      throw err;
-    }
-  }
-
-  let userRole = "student";
-  let createdUser = null;
 
   if (role === "admin") {
     if (normalizedEmail !== adminEmailLower) {
@@ -123,39 +108,41 @@ export const registerUser = async ({
       throw err;
     }
 
-    const existingAdmin = await Admin.findOne({ role: "admin" });
-    if (existingAdmin) {
+    const adminExists = await Admin.findOne();
+    if (adminExists) {
       const err = new Error("Admin user already exists");
       err.statusCode = 403;
       throw err;
     }
 
-    userRole = "admin";
-    createdUser = await Admin.create({
+    const createdAdmin = await Admin.create({
       name,
       email: normalizedEmail,
       password,
-      role: userRole,
       ...(phoneNumber && { phoneNumber }),
-      isRegistered: true,
     });
-  } else {
-    createdUser = await User.create({
-      name,
-      email: normalizedEmail,
-      password,
-      role: userRole,
-      ...(phoneNumber && { phoneNumber }),
-      ...(militaryId && { militaryId }),
-      isRegistered: true,
-    });
+
+    const token = generateToken(createdAdmin._id, "admin");
+    return {
+      token,
+      user: sanitizeUser(createdAdmin, "admin"),
+    };
   }
 
-  const token = generateToken(createdUser._id);
+  const createdUser = await User.create({
+    name,
+    email: normalizedEmail,
+    password,
+    ...(phoneNumber && { phoneNumber }),
+    isRegistered: true,
+  });
+
+  const directoryEntry = await ensureStudentInDirectory(createdUser);
+  const token = generateToken(createdUser._id, "user");
 
   return {
     token,
-    user: sanitizeUser(createdUser),
+    user: buildStudentAuthProfile(createdUser, directoryEntry),
   };
 };
 
@@ -169,12 +156,7 @@ export const loginUser = async ({ email, password }) => {
   }
 
   if (normalizedEmail === adminEmailLower) {
-    // Admin login - STRICT password checking only
-    console.log("[auth.service] Admin login attempt for", normalizedEmail);
-    const admin = await Admin.findOne({ email: normalizedEmail }).select(
-      "+password",
-    );
-    console.log("[auth.service] Admin lookup result:", !!admin);
+    const admin = await Admin.findOne({ email: normalizedEmail });
 
     if (!admin) {
       const err = new Error("البريد الإلكتروني أو كلمة المرور غير صحيحة");
@@ -182,23 +164,20 @@ export const loginUser = async ({ email, password }) => {
       throw err;
     }
 
-    // Verify password matches exactly for admin
     const isMatch = await admin.matchPassword(password);
-    console.log("[auth.service] Admin password match:", isMatch);
     if (!isMatch) {
       const err = new Error("البريد الإلكتروني أو كلمة المرور غير صحيحة");
       err.statusCode = 401;
       throw err;
     }
 
-    const token = generateToken(admin._id);
+    const token = generateToken(admin._id, "admin");
     return {
       token,
-      user: sanitizeUser(admin),
+      user: sanitizeUser(admin, "admin"),
     };
   }
 
-  // Regular users - validate password before auto-creating a new account
   const passwordError = validatePassword(password || "");
   if (passwordError) {
     const err = new Error(passwordError);
@@ -216,19 +195,19 @@ export const loginUser = async ({ email, password }) => {
       throw err;
     }
   } else {
-    // Auto-create user on first login with validated password
     user = await User.create({
       name: (email || "").split("@")[0],
       email: normalizedEmail,
-      password: password,
-      role: "student",
+      password,
       isRegistered: true,
     });
   }
 
-  const token = generateToken(user._id);
+  const directoryEntry = await ensureStudentInDirectory(user);
+  const token = generateToken(user._id, "user");
+
   return {
     token,
-    user: sanitizeUser(user),
+    user: buildStudentAuthProfile(user, directoryEntry),
   };
 };

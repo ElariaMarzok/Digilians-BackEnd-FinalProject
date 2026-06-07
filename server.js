@@ -7,6 +7,7 @@ import connectDB from "./config/db.js";
 
 import authRouter from "./routes/auth.routes.js";
 import profileRouter from "./routes/profile.routes.js";
+import statementRouter from "./routes/statement.routes.js";
 
 const app = express();
 
@@ -33,6 +34,7 @@ app.use(express.json());
 
 app.use("/api/auth", authRouter);
 app.use("/api/profile", profileRouter);
+app.use("/api/statement", statementRouter);
 
 app.get("/", (req, res) => {
   res.json({
@@ -54,10 +56,26 @@ const envMongoUri = process.env.MONGO_URI;
 const isDefaultPlaceholder =
   envMongoUri && envMongoUri.includes("USERNAME:PASSWORD");
 
-const MONGO_URI =
+const ensureDigiliansDb = (uri) => {
+  if (!uri || uri.includes("127.0.0.1") || uri.includes("localhost")) {
+    return uri;
+  }
+
+  if (/\/[^/?]+(\?|$)/.test(uri)) {
+    return uri;
+  }
+
+  const separator = uri.includes("?") ? "&" : "?";
+  return uri.endsWith("/")
+    ? `${uri}digilians`
+    : `${uri}/digilians`;
+};
+
+const MONGO_URI = ensureDigiliansDb(
   envMongoUri && !isDefaultPlaceholder
     ? envMongoUri
-    : "mongodb://127.0.0.1:27017/digilians";
+    : "mongodb://127.0.0.1:27017/digilians",
+);
 
 if (!envMongoUri || isDefaultPlaceholder) {
   console.warn(
