@@ -8,6 +8,10 @@ import connectDB from "./config/db.js";
 import authRouter from "./routes/auth.routes.js";
 import profileRouter from "./routes/profile.routes.js";
 import statementRouter from "./routes/statement.routes.js";
+import medicalRouter from "./routes/medical.routes.js";
+
+console.log("medicalRouter type", typeof medicalRouter);
+console.log("medicalRouter keys", Object.keys(medicalRouter));
 
 const app = express();
 
@@ -35,6 +39,8 @@ app.use(express.json());
 app.use("/api/auth", authRouter);
 app.use("/api/profile", profileRouter);
 app.use("/api/statement", statementRouter);
+app.use("/api/medical", medicalRouter);
+console.log("Mounted medical router at /api/medical");
 
 app.get("/", (req, res) => {
   res.json({
