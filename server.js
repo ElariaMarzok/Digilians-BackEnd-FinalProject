@@ -8,6 +8,7 @@ import connectDB from "./config/db.js";
 import authRouter from "./routes/auth.routes.js";
 import profileRouter from "./routes/profile.routes.js";
 import statementRouter from "./routes/statement.routes.js";
+import bookingRouter from "./routes/booking.routes.js";
 
 const app = express();
 
@@ -35,6 +36,7 @@ app.use(express.json());
 app.use("/api/auth", authRouter);
 app.use("/api/profile", profileRouter);
 app.use("/api/statement", statementRouter);
+app.use("/api/booking", bookingRouter);
 
 app.get("/", (req, res) => {
   res.json({

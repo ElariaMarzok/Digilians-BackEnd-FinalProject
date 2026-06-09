@@ -10,9 +10,6 @@
     "seed:students": "node scripts/setupDatabase.js",
     "seed:admin": "node createAdmin.js"
   },
-
-
-
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Sandy-Magdy/Digilians-BackEnd-FinalProject.git"
