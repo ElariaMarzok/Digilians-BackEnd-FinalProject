@@ -10,10 +10,19 @@ import connectDB from "./config/db.js";
 import authRouter from "./routes/auth.routes.js";
 import profileRouter from "./routes/profile.routes.js";
 import statementRouter from "./routes/statement.routes.js";
+
+import bookingRouter from "./routes/booking.routes.js";
+
 import medicalRouter from "./routes/medical.routes.js";
+<<<<<<< HEAD
 import paymentRoutes from './routes/paymentRoutes.js';
+=======
+import punishmentRouter from "./routes/punishment.routes.js";
+
+>>>>>>> 124c00fc845d2123488a4c6277e596be149a125d
 console.log("medicalRouter type", typeof medicalRouter);
 console.log("medicalRouter keys", Object.keys(medicalRouter));
+
 
 const app = express();
 
@@ -43,9 +52,17 @@ app.use(express.json());
 app.use("/api/auth", authRouter);
 app.use("/api/profile", profileRouter);
 app.use("/api/statement", statementRouter);
+<<<<<<< HEAD
 
+=======
+<<<<<<< HEAD
+app.use("/api/booking", bookingRouter);
+=======
+>>>>>>> 124c00fc845d2123488a4c6277e596be149a125d
 app.use("/api/medical", medicalRouter);
+app.use("/api/punishments", punishmentRouter);
 console.log("Mounted medical router at /api/medical");
+>>>>>>> 66c2e72d5e784da99439e865a47dddf9c82ace62
 
 app.use('/api/payments', paymentRoutes);
 //  إتاحة مجلد الرفع بشكل علني ليتمكن الفرونت إند من عرض صور الإيصالات
