@@ -10,9 +10,6 @@
     "seed:students": "node scripts/setupDatabase.js",
     "seed:admin": "node createAdmin.js"
   },
-
-
-
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Sandy-Magdy/Digilians-BackEnd-FinalProject.git"
@@ -30,7 +27,8 @@
     "dotenv": "^16.5.0",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.14.1"
+    "mongoose": "^8.14.1",
+    "multer": "^2.1.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
