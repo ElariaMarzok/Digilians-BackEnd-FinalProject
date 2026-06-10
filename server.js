@@ -14,14 +14,13 @@ import statementRouter from "./routes/statement.routes.js";
 import bookingRouter from "./routes/booking.routes.js";
 
 import medicalRouter from "./routes/medical.routes.js";
-<<<<<<< HEAD
 import paymentRoutes from './routes/paymentRoutes.js';
-=======
 import punishmentRouter from "./routes/punishment.routes.js";
-
->>>>>>> 124c00fc845d2123488a4c6277e596be149a125d
+import excuseRouter from "./routes/excuse.routes.js";
 console.log("medicalRouter type", typeof medicalRouter);
 console.log("medicalRouter keys", Object.keys(medicalRouter));
+console.log("excuseRouter type", typeof excuseRouter);
+console.log("excuseRouter keys", excuseRouter ? Object.keys(excuseRouter) : []);
 
 
 const app = express();
@@ -52,17 +51,13 @@ app.use(express.json());
 app.use("/api/auth", authRouter);
 app.use("/api/profile", profileRouter);
 app.use("/api/statement", statementRouter);
-<<<<<<< HEAD
-
-=======
-<<<<<<< HEAD
 app.use("/api/booking", bookingRouter);
-=======
->>>>>>> 124c00fc845d2123488a4c6277e596be149a125d
 app.use("/api/medical", medicalRouter);
 app.use("/api/punishments", punishmentRouter);
+app.use("/api/excuses", excuseRouter);
 console.log("Mounted medical router at /api/medical");
->>>>>>> 66c2e72d5e784da99439e865a47dddf9c82ace62
+console.log("Mounted excuse router at /api/excuses");
+
 
 app.use('/api/payments', paymentRoutes);
 //  إتاحة مجلد الرفع بشكل علني ليتمكن الفرونت إند من عرض صور الإيصالات
@@ -75,6 +70,23 @@ app.get("/", (req, res) => {
     status: "running",
     version: "1.0.0",
   });
+});
+
+// Debug: list registered routes (safe endpoint)
+app.get('/_debug/routes', (req, res) => {
+  try {
+    if (!app._router || !app._router.stack) return res.json({ routes: [] });
+    const routes = [];
+    app._router.stack.forEach((mw) => {
+      if (mw.route && mw.route.path) routes.push(mw.route.path);
+      else if (mw.name === 'router' && mw.handle && mw.handle.stack) {
+        mw.handle.stack.forEach((r) => r.route && routes.push(r.route.path));
+      }
+    });
+    return res.json({ routes });
+  } catch (err) {
+    return res.status(500).json({ error: String(err) });
+  }
 });
 
 // التعامل مع المسارات غير الموجودة (404)
@@ -125,7 +137,29 @@ console.log(`📌 Connecting to ${connectionTarget}`);
 
 // الاتصال بقاعدة البيانات وتشغيل السيرفر
 connectDB(MONGO_URI).then(() => {
+  // طباعة المسارات المسجلة لمساعدة التصحيح
+  const listRoutes = () => {
+    try {
+      if (!app._router || !app._router.stack) {
+        console.log('No routes registered yet');
+        return;
+      }
+
+      const routes = [];
+      app._router.stack.forEach((mw) => {
+        if (mw.route && mw.route.path) routes.push(mw.route.path);
+        else if (mw.name === 'router' && mw.handle && mw.handle.stack) {
+          mw.handle.stack.forEach((r) => r.route && routes.push(r.route.path));
+        }
+      });
+      console.log('Registered routes:', routes);
+    } catch (err) {
+      console.error('Error listing routes', err);
+    }
+  };
+
   app.listen(PORT, () => {
     console.log(`✅ Server running on http://localhost:${PORT}`);
+    listRoutes();
   });
 });
