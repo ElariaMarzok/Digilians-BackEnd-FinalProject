@@ -43,12 +43,12 @@ app.use(express.json());
 app.use("/api/auth", authRouter);
 app.use("/api/profile", profileRouter);
 app.use("/api/statement", statementRouter);
-<<<<<<< HEAD
+
 app.use("/api/booking", bookingRouter);
-=======
+
 app.use("/api/medical", medicalRouter);
 console.log("Mounted medical router at /api/medical");
->>>>>>> 66c2e72d5e784da99439e865a47dddf9c82ace62
+
 
 app.get("/", (req, res) => {
   res.json({
@@ -65,7 +65,7 @@ app.use((req, res) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 const envMongoUri = process.env.MONGO_URI;
 const isDefaultPlaceholder =
   envMongoUri && envMongoUri.includes("USERNAME:PASSWORD");
