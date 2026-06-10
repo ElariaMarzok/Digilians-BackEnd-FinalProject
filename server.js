@@ -1,21 +1,31 @@
 import dotenv from "dotenv";
 dotenv.config({ override: true });
 
+import path from 'path';
 import express from "express";
 import cors from "cors";
 import connectDB from "./config/db.js";
 
+// استيراد المسارات (Routes) القديمة والجديدة
 import authRouter from "./routes/auth.routes.js";
 import profileRouter from "./routes/profile.routes.js";
 import statementRouter from "./routes/statement.routes.js";
 import medicalRouter from "./routes/medical.routes.js";
 import holidayRouter from "./routes/holiday.routes.js";
 
+import bookingRouter from "./routes/booking.routes.js";
+
+import medicalRouter from "./routes/medical.routes.js";
+import paymentRoutes from './routes/paymentRoutes.js';
+import punishmentRouter from "./routes/punishment.routes.js";
+
 console.log("medicalRouter type", typeof medicalRouter);
 console.log("medicalRouter keys", Object.keys(medicalRouter));
 
+
 const app = express();
 
+// إعدادات الـ CORS المتقدمة الخاصة بكِ
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -37,15 +47,37 @@ app.use(
 
 app.use(express.json());
 
+// 📝 تسجيل جميع المسارات في الـ Middleware
 app.use("/api/auth", authRouter);
 app.use("/api/profile", profileRouter);
 app.use("/api/statement", statementRouter);
+
+app.use("/api/booking", bookingRouter);
+
+
+
+
+
+
+app.use("/api/booking", bookingRouter);
+
+
 app.use("/api/medical", medicalRouter);
+app.use("/api/punishments", punishmentRouter);
 console.log("Mounted medical router at /api/medical");
 
+<<<<<<< HEAD
 app.use("/api/holiday", holidayRouter);
 console.log("Mounted holiday router at /api/holiday");
 
+=======
+
+app.use('/api/payments', paymentRoutes);
+//  إتاحة مجلد الرفع بشكل علني ليتمكن الفرونت إند من عرض صور الإيصالات
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
+// المسار الرئيسي للتأكد من عمل الـ API
+>>>>>>> 4c89e9516d32d50bb6f0dcd675a9cec45a2c869b
 app.get("/", (req, res) => {
   res.json({
     message: "Digilians API",
@@ -54,6 +86,7 @@ app.get("/", (req, res) => {
   });
 });
 
+// التعامل مع المسارات غير الموجودة (404)
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -61,11 +94,12 @@ app.use((req, res) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 const envMongoUri = process.env.MONGO_URI;
 const isDefaultPlaceholder =
   envMongoUri && envMongoUri.includes("USERNAME:PASSWORD");
 
+// دالة تأمين اسم قاعدة البيانات
 const ensureDigiliansDb = (uri) => {
   if (!uri || uri.includes("127.0.0.1") || uri.includes("localhost")) {
     return uri;
@@ -98,6 +132,7 @@ const connectionTarget = MONGO_URI.includes("127.0.0.1")
   : "remote MongoDB";
 console.log(`📌 Connecting to ${connectionTarget}`);
 
+// الاتصال بقاعدة البيانات وتشغيل السيرفر
 connectDB(MONGO_URI).then(() => {
   app.listen(PORT, () => {
     console.log(`✅ Server running on http://localhost:${PORT}`);
