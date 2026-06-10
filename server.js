@@ -9,6 +9,7 @@ import authRouter from "./routes/auth.routes.js";
 import profileRouter from "./routes/profile.routes.js";
 import statementRouter from "./routes/statement.routes.js";
 import medicalRouter from "./routes/medical.routes.js";
+import holidayRouter from "./routes/holiday.routes.js";
 
 console.log("medicalRouter type", typeof medicalRouter);
 console.log("medicalRouter keys", Object.keys(medicalRouter));
@@ -41,6 +42,9 @@ app.use("/api/profile", profileRouter);
 app.use("/api/statement", statementRouter);
 app.use("/api/medical", medicalRouter);
 console.log("Mounted medical router at /api/medical");
+
+app.use("/api/holiday", holidayRouter);
+console.log("Mounted holiday router at /api/holiday");
 
 app.get("/", (req, res) => {
   res.json({

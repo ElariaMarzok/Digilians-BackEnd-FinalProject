@@ -8,11 +8,10 @@
     "dev": "nodemon server.js",
     "db:setup": "node scripts/setupDatabase.js",
     "seed:students": "node scripts/setupDatabase.js",
-    "seed:admin": "node createAdmin.js"
+    "seed:admin": "node createAdmin.js",
+    "checkDb": "node scripts/checkDb.js",
+    "clear:attendance": "node scripts/clearAttendance.js"
   },
-
-
-
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Sandy-Magdy/Digilians-BackEnd-FinalProject.git"
