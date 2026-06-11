@@ -15,14 +15,13 @@ import holidayRouter from "./routes/holiday.routes.js";
 
 import bookingRouter from "./routes/booking.routes.js";
 
-import medicalRouter from "./routes/medical.routes.js";
 import paymentRoutes from './routes/paymentRoutes.js';
 import punishmentRouter from "./routes/punishment.routes.js";
-<<<<<<< HEAD
-import excuseRouter from "./routes/excuse.routes.js";
-=======
 
->>>>>>> 7249cec803ea96659d570ee4a89e66d997e2228c
+import excuseRouter from "./routes/excuse.routes.js";
+import relativesRouter from "./routes/relative.routes.js";
+
+
 console.log("medicalRouter type", typeof medicalRouter);
 console.log("medicalRouter keys", Object.keys(medicalRouter));
 console.log("excuseRouter type", typeof excuseRouter);
@@ -57,9 +56,7 @@ app.use(express.json());
 app.use("/api/auth", authRouter);
 app.use("/api/profile", profileRouter);
 app.use("/api/statement", statementRouter);
-<<<<<<< HEAD
 app.use("/api/booking", bookingRouter);
-=======
 
 app.use("/api/booking", bookingRouter);
 
@@ -71,29 +68,25 @@ app.use("/api/booking", bookingRouter);
 app.use("/api/booking", bookingRouter);
 
 
->>>>>>> 7249cec803ea96659d570ee4a89e66d997e2228c
 app.use("/api/medical", medicalRouter);
 app.use("/api/punishments", punishmentRouter);
 app.use("/api/excuses", excuseRouter);
 console.log("Mounted medical router at /api/medical");
-<<<<<<< HEAD
 console.log("Mounted excuse router at /api/excuses");
 
-=======
 
-<<<<<<< HEAD
 app.use("/api/holiday", holidayRouter);
 console.log("Mounted holiday router at /api/holiday");
 
-=======
->>>>>>> 7249cec803ea96659d570ee4a89e66d997e2228c
+app.use("/api/relatives", relativesRouter);
+console.log("Mounted relatives router at /api/relatives");
+
 
 app.use('/api/payments', paymentRoutes);
 //  إتاحة مجلد الرفع بشكل علني ليتمكن الفرونت إند من عرض صور الإيصالات
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // المسار الرئيسي للتأكد من عمل الـ API
->>>>>>> 4c89e9516d32d50bb6f0dcd675a9cec45a2c869b
 app.get("/", (req, res) => {
   res.json({
     message: "Digilians API",
