@@ -7,17 +7,17 @@ import {
   ensureStudentInDirectory,
 } from "./studentDirectory.service.js";
 
+// Late hour set to 17 (5 PM) - marks student as late but no deduction
 const LATE_HOUR = 17;
-const LATE_DEDUCTION = 5;
+const LATE_DEDUCTION = 0; // No automatic deduction for late arrival
 
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+// Unified today range function - uses local server time
 const getTodayRange = () => {
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
-
-  const endOfToday = new Date();
-  endOfToday.setHours(23, 59, 59, 999);
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
   return { startOfToday, endOfToday };
 };
@@ -59,7 +59,7 @@ const formatAdditionRecord = (record) => {
     date: formatDate(record.arrivedAt),
     time: formatTime(record.arrivedAt),
     arrivedAt: record.arrivedAt,
-    permitType: record.permitType,
+    permitType: record.permitType || "—",
     status: record.status,
     deduction: record.deduction,
     note: record.note || "",
@@ -73,6 +73,7 @@ export const addStudentAttendance = async (identifier) => {
   const directoryStudent = await findDirectoryStudentByIdentifier(identifier);
   const { startOfToday, endOfToday } = getTodayRange();
 
+  // Check for existing record for today
   const existingToday = await PermitAdminAddition.findOne({
     student: directoryStudent._id,
     arrivedAt: { $gte: startOfToday, $lte: endOfToday },
@@ -102,7 +103,12 @@ export const addStudentAttendance = async (identifier) => {
 };
 
 export const getAttendanceRecords = async ({ searchValue = "" } = {}) => {
-  const records = await PermitAdminAddition.find()
+  const { startOfToday, endOfToday } = getTodayRange();
+  
+  // Only show today's records in admin table
+  const records = await PermitAdminAddition.find({
+    arrivedAt: { $gte: startOfToday, $lte: endOfToday },
+  })
     .populate("student")
     .sort({ arrivedAt: -1 });
 
@@ -129,87 +135,88 @@ export const searchAllStudentsWithStatus = async ({ searchValue = "" } = {}) => 
     return [];
   }
 
-  const searchRegex = new RegExp(escapeRegex(trimmed), "i");
-  const nameStartsRegex = new RegExp(`^${escapeRegex(trimmed)}`, "i");
-
-  let students = await PermitStudentDirectory.find({
-    $or: [
-      { email: trimmed.toLowerCase() },
-      { email: searchRegex },
-      { name: nameStartsRegex },
-      { name: searchRegex },
-      { militaryId: searchRegex },
-    ],
-  })
-    .sort({ name: 1 })
-    .limit(30);
-
-  if (students.length === 0) {
-    const user = await User.findOne({
-      $or: [
-        { email: trimmed.toLowerCase() },
-        { email: searchRegex },
-        { name: nameStartsRegex },
-        { name: searchRegex },
-      ],
-    });
-
-    if (user) {
-      const entry = await ensureStudentInDirectory(user);
-      students = [entry];
-    }
-  }
-
   const { startOfToday, endOfToday } = getTodayRange();
 
-  const results = await Promise.all(
-    students.map(async (student) => {
-      const todayRecord = await PermitAdminAddition.findOne({
-        student: student._id,
-        arrivedAt: { $gte: startOfToday, $lte: endOfToday },
-      }).sort({ arrivedAt: -1 });
+// البحث فقط على طلاب اليوم في جدول التصحيح
+  const additionRecords = await PermitAdminAddition.find({
+    arrivedAt: { $gte: startOfToday, $lte: endOfToday },
+  })
+    .populate("student")
+    .sort({ arrivedAt: -1 });
 
-      return {
-        _id: student._id,
-        name: student.name,
-        email: student.email,
-        militaryId: student.militaryId,
-        inTable: Boolean(todayRecord),
-        arrivalStatus: todayRecord
-          ? formatArrivalStatus(todayRecord.status)
-          : "غير مسجل",
-        permitType: todayRecord?.permitType || "—",
-        requestStatus: todayRecord?.permitType || "—",
-        additionId: todayRecord?._id || null,
-      };
-    }),
-  );
+  // تصفية الطلاب اللي عندهم record ومطابقين للبحث
+  const matchedRecords = additionRecords.filter((record) => {
+    const student = record.student;
+    return (
+      student.militaryId.includes(trimmed) ||
+      student.email.toLowerCase().includes(trimmed.toLowerCase()) ||
+      student.name.includes(trimmed)
+    );
+  });
+
+  // إزالة المكررات (أخذ آخر record لكل طالب)
+  const uniqueByStudent = {};
+  matchedRecords.forEach((record) => {
+    const studentId = record.student._id.toString();
+    if (!uniqueByStudent[studentId]) {
+      uniqueByStudent[studentId] = record;
+    }
+  });
+
+  const students = Object.values(uniqueByStudent);
+
+  const results = students.map((record) => {
+    const student = record.student;
+
+    return {
+      _id: student._id,
+      name: student.name,
+      email: student.email,
+      militaryId: student.militaryId,
+      inTable: true,
+      arrivalStatus: formatArrivalStatus(record.status),
+      permitType: record.permitType || "—",
+      requestStatus: record.permitType || "—",
+      additionId: record._id,
+      arrivedAt: record.arrivedAt,
+      status: record.status,
+      deduction: record.deduction,
+    };
+  });
 
   return results;
 };
 
 export const getStatementStats = async () => {
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
+  // Use unified getTodayRange for consistency with Egypt timezone
+  const { startOfToday, endOfToday } = getTodayRange();
 
-  const endOfToday = new Date();
-  endOfToday.setHours(23, 59, 59, 999);
+  // Count today's attendance records
+  const todayAttendance = await PermitAdminAddition.countDocuments({
+    arrivedAt: { $gte: startOfToday, $lte: endOfToday },
+  });
+  
+  const todayLate = await PermitAdminAddition.countDocuments({
+    arrivedAt: { $gte: startOfToday, $lte: endOfToday },
+    status: "late",
+  });
 
-  const [totalExpected, todayAttendance, todayLate] = await Promise.all([
-    PermitStudentDirectory.countDocuments(),
-    PermitAdminAddition.countDocuments({
-      arrivedAt: { $gte: startOfToday, $lte: endOfToday },
-    }),
-    PermitAdminAddition.countDocuments({
-      arrivedAt: { $gte: startOfToday, $lte: endOfToday },
-      status: "late",
-    }),
-  ]);
+  // Get all today's records to calculate total deductions
+  const todayRecords = await PermitAdminAddition.find({
+    arrivedAt: { $gte: startOfToday, $lte: endOfToday },
+  });
+  
+  // Calculate total deductions (sum of all late penalties)
+  const totalDeductions = todayRecords.reduce((sum, record) => sum + record.deduction, 0);
+
+  //_totalExpected = كل الطلاب في الداتا بيز_=
+  const totalExpected = await PermitStudentDirectory.countDocuments();
 
   return {
     totalExpected,
     totalAttendance: todayAttendance,
     lateStudents: todayLate,
+    totalDeductions,
   };
 };
 
@@ -237,7 +244,7 @@ export const getUserStatementData = async (email, userId) => {
   const history = records.map((record) => ({
     _id: record._id,
     date: formatDate(record.arrivedAt),
-    task: record.permitType,
+    task: record.permitType || "—",
     duration: "-",
     status: record.status === "late" ? "متأخر" : "في الموعد",
     deduction: record.deduction,
@@ -279,7 +286,8 @@ export const updateAttendanceNote = async (additionId, note) => {
 };
 
 export const deleteAttendanceRecord = async (additionId) => {
-  const record = await PermitAdminAddition.findByIdAndDelete(additionId);
+  // First get the record to find the student reference
+  const record = await PermitAdminAddition.findById(additionId);
 
   if (!record) {
     const err = new Error("سجل الإضافة غير موجود");
@@ -287,5 +295,37 @@ export const deleteAttendanceRecord = async (additionId) => {
     throw err;
   }
 
+  // Delete ONLY the attendance record - keep the student in directory!
+  await PermitAdminAddition.findByIdAndDelete(additionId);
+
   return { deleted: true };
+};
+
+// Update deduction (grades) for attendance record
+export const updateAttendanceDeduction = async (additionId, deduction) => {
+  const record = await PermitAdminAddition.findByIdAndUpdate(
+    additionId,
+    { deduction: Math.max(0, deduction) },
+    { new: true },
+  ).populate("student");
+
+  if (!record) {
+    const err = new Error("سجل الإضافة غير موجود");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  return formatAdditionRecord(record);
+};
+
+
+export const clearAllAttendanceRecords = async () => {
+  // Delete ALL today's attendance records from the database
+  const { startOfToday, endOfToday } = getTodayRange();
+  
+  const result = await PermitAdminAddition.deleteMany({
+    arrivedAt: { $gte: startOfToday, $lte: endOfToday },
+  });
+  
+  return { deleted: true, count: result.deletedCount };
 };

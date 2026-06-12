@@ -70,3 +70,32 @@ export const adminOnlyMiddleware = (req, res, next) => {
 };
 
 export default authMiddleware;
+export const optionalAuth = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return next();
+  }
+
+  const token = authHeader.split(" ")[1];
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "default_secret");
+    let account = null;
+    if (decoded.accountType === "admin") {
+      account = await Admin.findById(decoded.id).select("-password");
+    } else {
+      account = await User.findById(decoded.id).select("-password");
+      if (!account) {
+        account = await Admin.findById(decoded.id).select("-password");
+      }
+    }
+
+    if (account) {
+      req.user = { ...account.toObject(), role: account.role || "student" };
+    }
+  } catch (err) {
+    // ignore token errors for optional auth
+    console.log("optionalAuth: token invalid or expired", err.message);
+  }
+
+  return next();
+};
