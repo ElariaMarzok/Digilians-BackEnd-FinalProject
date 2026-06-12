@@ -1,4 +1,4 @@
-import dotenv from "dotenv";
+﻿import dotenv from "dotenv";
 dotenv.config({ override: true });
 
 import path from 'path';
@@ -6,31 +6,26 @@ import express from "express";
 import cors from "cors";
 import connectDB from "./config/db.js";
 
-// استيراد المسارات (Routes) القديمة والجديدة
+// Ø§Ø³ØªÙŠØ±Ø§Ø¯ Ø§Ù„Ù…Ø³Ø§Ø±Ø§Øª (Routes) Ø§Ù„Ù‚Ø¯ÙŠÙ…Ø© ÙˆØ§Ù„Ø¬Ø¯ÙŠØ¯Ø©
 import authRouter from "./routes/auth.routes.js";
 import profileRouter from "./routes/profile.routes.js";
 import statementRouter from "./routes/statement.routes.js";
 import medicalRouter from "./routes/medical.routes.js";
 import holidayRouter from "./routes/holiday.routes.js";
-
 import bookingRouter from "./routes/booking.routes.js";
-
 import paymentRoutes from './routes/paymentRoutes.js';
 import punishmentRouter from "./routes/punishment.routes.js";
-
 import excuseRouter from "./routes/excuse.routes.js";
 import relativesRouter from "./routes/relative.routes.js";
-
+import messagesRouter from "./routes/message.routes.js";
 
 console.log("medicalRouter type", typeof medicalRouter);
 console.log("medicalRouter keys", Object.keys(medicalRouter));
 console.log("excuseRouter type", typeof excuseRouter);
 console.log("excuseRouter keys", excuseRouter ? Object.keys(excuseRouter) : []);
 
-
 const app = express();
 
-// إعدادات الـ CORS المتقدمة الخاصة بكِ
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -52,28 +47,16 @@ app.use(
 
 app.use(express.json());
 
-// 📝 تسجيل جميع المسارات في الـ Middleware
 app.use("/api/auth", authRouter);
 app.use("/api/profile", profileRouter);
+app.use("/api/messages", messagesRouter);
 app.use("/api/statement", statementRouter);
 app.use("/api/booking", bookingRouter);
-
-app.use("/api/booking", bookingRouter);
-
-
-
-
-
-
-app.use("/api/booking", bookingRouter);
-
-
 app.use("/api/medical", medicalRouter);
 app.use("/api/punishments", punishmentRouter);
 app.use("/api/excuses", excuseRouter);
 console.log("Mounted medical router at /api/medical");
 console.log("Mounted excuse router at /api/excuses");
-
 
 app.use("/api/holiday", holidayRouter);
 console.log("Mounted holiday router at /api/holiday");
@@ -81,12 +64,9 @@ console.log("Mounted holiday router at /api/holiday");
 app.use("/api/relatives", relativesRouter);
 console.log("Mounted relatives router at /api/relatives");
 
-
 app.use('/api/payments', paymentRoutes);
-//  إتاحة مجلد الرفع بشكل علني ليتمكن الفرونت إند من عرض صور الإيصالات
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
-// المسار الرئيسي للتأكد من عمل الـ API
 app.get("/", (req, res) => {
   res.json({
     message: "Digilians API",
@@ -95,7 +75,6 @@ app.get("/", (req, res) => {
   });
 });
 
-// Debug: list registered routes (safe endpoint)
 app.get('/_debug/routes', (req, res) => {
   try {
     if (!app._router || !app._router.stack) return res.json({ routes: [] });
@@ -112,7 +91,6 @@ app.get('/_debug/routes', (req, res) => {
   }
 });
 
-// التعامل مع المسارات غير الموجودة (404)
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -125,7 +103,6 @@ const envMongoUri = process.env.MONGO_URI;
 const isDefaultPlaceholder =
   envMongoUri && envMongoUri.includes("USERNAME:PASSWORD");
 
-// دالة تأمين اسم قاعدة البيانات
 const ensureDigiliansDb = (uri) => {
   if (!uri || uri.includes("127.0.0.1") || uri.includes("localhost")) {
     return uri;
@@ -135,7 +112,6 @@ const ensureDigiliansDb = (uri) => {
     return uri;
   }
 
-  const separator = uri.includes("?") ? "&" : "?";
   return uri.endsWith("/")
     ? `${uri}digilians`
     : `${uri}/digilians`;
@@ -156,11 +132,9 @@ if (!envMongoUri || isDefaultPlaceholder) {
 const connectionTarget = MONGO_URI.includes("127.0.0.1")
   ? "local MongoDB"
   : "remote MongoDB";
-console.log(`📌 Connecting to ${connectionTarget}`);
+console.log(`ðŸ“Œ Connecting to ${connectionTarget}`);
 
-// الاتصال بقاعدة البيانات وتشغيل السيرفر
 connectDB(MONGO_URI).then(() => {
-  // طباعة المسارات المسجلة لمساعدة التصحيح
   const listRoutes = () => {
     try {
       if (!app._router || !app._router.stack) {
@@ -182,7 +156,7 @@ connectDB(MONGO_URI).then(() => {
   };
 
   app.listen(PORT, () => {
-    console.log(`✅ Server running on http://localhost:${PORT}`);
+    console.log(`âœ… Server running on http://localhost:${PORT}`);
     listRoutes();
   });
 });
