@@ -1,5 +1,8 @@
 import Excuse from "../models/Excuse.js";
+<<<<<<< HEAD
 import mongoose from "mongoose";
+=======
+>>>>>>> 373d03afbaae175511e738067412002f9087e2ec
 import PermitStudentDirectory from "../models/PermitStudentDirectory.js";
 
 export const createExcuse = async (userId, { title, message, attachments = [] }) => {
@@ -41,6 +44,7 @@ export const getExcuseById = async (id) => {
 };
 
 export const respondToExcuse = async (id, adminId, responseText, status = "مُجاب") => {
+<<<<<<< HEAD
   // try find by Mongo _id first (only if id looks like an ObjectId),
   // then fall back to militaryId for compatibility with older UIs.
   let excuse = null;
@@ -50,15 +54,23 @@ export const respondToExcuse = async (id, adminId, responseText, status = "مُ�
   if (!excuse) {
     excuse = await Excuse.findOne({ militaryId: id });
   }
+=======
+  const excuse = await Excuse.findById(id);
+>>>>>>> 373d03afbaae175511e738067412002f9087e2ec
   if (!excuse) return null;
 
   excuse.response = responseText;
   excuse.responder = adminId;
   excuse.respondedAt = new Date();
   excuse.status = status;
+<<<<<<< HEAD
   console.log(`[excuse.service] responding to excuse ${id} with status=${status} by admin=${adminId}`);
   await excuse.save();
   console.log(`[excuse.service] saved excuse ${excuse._id} status=${excuse.status} responder=${excuse.responder}`);
+=======
+
+  await excuse.save();
+>>>>>>> 373d03afbaae175511e738067412002f9087e2ec
 
   return excuse.populate("user responder");
 };
