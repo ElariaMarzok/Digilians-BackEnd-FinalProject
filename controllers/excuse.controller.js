@@ -4,6 +4,7 @@ import {
   getAllExcuses,
   getExcuseById,
   respondToExcuse,
+  clearAllExcuses,
 } from "../services/excuse.service.js";
 import User from "../models/User.js";
 import { successResponse, errorResponse } from "../utils/response.js";
@@ -86,3 +87,14 @@ export const respondToExcuseController = async (req, res) => {
     return errorResponse(res, err.statusCode || 500, err.message || "Server error");
   }
 };
+
+export const clearAllExcusesController = async (req, res) => {
+  try {
+    const result = await clearAllExcuses();
+    return successResponse(res, 200, "All excuses deleted successfully", { deletedCount: result.deletedCount || 0 });
+  } catch (err) {
+    return errorResponse(res, err.statusCode || 500, err.message || "Server error");
+  }
+};
+
+

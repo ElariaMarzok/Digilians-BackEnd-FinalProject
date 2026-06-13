@@ -77,3 +77,9 @@ export const respondToExcuse = async (
 
   return excuse.populate("user responder");
 };
+
+export const clearAllExcuses = async () => {
+  const result = await Excuse.deleteMany({});
+  return { deletedCount: result.deletedCount || 0 };
+};
+

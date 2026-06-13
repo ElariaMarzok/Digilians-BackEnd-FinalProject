@@ -7,6 +7,7 @@ import {
   listAllExcusesController,
   getExcuseController,
   respondToExcuseController,
+  clearAllExcusesController,
 } from "../controllers/excuse.controller.js";
 
 const router = Router();
@@ -15,6 +16,7 @@ router.post("/", optionalAuth, upload.array('attachments', 5), createExcuseContr
 router.get("/me", authMiddleware, getMyExcusesController);
 
 // Admin
+router.delete("/clear-all", authMiddleware, adminOnlyMiddleware, clearAllExcusesController);
 router.get("/", authMiddleware, adminOnlyMiddleware, listAllExcusesController);
 router.get("/:id", authMiddleware, adminOnlyMiddleware, getExcuseController);
 router.post("/:id/respond", authMiddleware, adminOnlyMiddleware, respondToExcuseController);
@@ -22,3 +24,5 @@ router.post("/:id/respond", authMiddleware, adminOnlyMiddleware, respondToExcuse
 console.log('Excuse router stack:', router.stack ? router.stack.map(r => r.route && r.route.path) : []);
 
 export default router;
+
+
