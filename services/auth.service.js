@@ -16,6 +16,22 @@ const generateToken = (userId, accountType = "user") => {
   });
 };
 
+const createDefaultAdminIfMissing = async (password) => {
+  const existingAdmin = await Admin.findOne({ email: adminEmailLower });
+  if (existingAdmin) return existingAdmin;
+
+  if (password !== adminPassword) {
+    return null;
+  }
+
+  return Admin.create({
+    name: ADMIN_ACCOUNT.name,
+    email: adminEmailLower,
+    password,
+    phoneNumber: "+201000000000",
+  });
+};
+
 const validatePassword = (password) => {
   const numberCount = (password.match(/\d/g) || []).length;
   const letterCount = (password.match(/[A-Za-z]/g) || []).length;
@@ -149,14 +165,12 @@ export const registerUser = async ({
 export const loginUser = async ({ email, password }) => {
   const normalizedEmail = email ? String(email).toLowerCase().trim() : "";
 
-  if (normalizedEmail !== adminEmailLower && password === adminPassword) {
-    const err = new Error("هذه كلمة المرور محجوزة للمسؤول");
-    err.statusCode = 401;
-    throw err;
-  }
-
   if (normalizedEmail === adminEmailLower) {
-    const admin = await Admin.findOne({ email: normalizedEmail });
+    let admin = await Admin.findOne({ email: normalizedEmail });
+
+    if (!admin) {
+      admin = await createDefaultAdminIfMissing(password);
+    }
 
     if (!admin) {
       const err = new Error("البريد الإلكتروني أو كلمة المرور غير صحيحة");
