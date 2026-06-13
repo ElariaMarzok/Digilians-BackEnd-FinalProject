@@ -5,7 +5,7 @@ import path from 'path';
 import express from "express";
 import cors from "cors";
 import connectDB from "./config/db.js";
-import medicalRouter from "./routes/medical.routes.js";
+// import medicalRouter from "./routes/medical.routes.js";
 
 import authRouter from "./routes/auth.routes.js";
 import profileRouter from "./routes/profile.routes.js";
