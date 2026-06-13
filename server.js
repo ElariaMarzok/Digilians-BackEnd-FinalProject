@@ -10,7 +10,6 @@ import connectDB from "./config/db.js";
 import authRouter from "./routes/auth.routes.js";
 import profileRouter from "./routes/profile.routes.js";
 import statementRouter from "./routes/statement.routes.js";
-import medicalRouter from "./routes/medical.routes.js";
 import holidayRouter from "./routes/holiday.routes.js";
 
 import bookingRouter from "./routes/booking.routes.js";
@@ -66,18 +65,15 @@ app.use("/api/medical", medicalRouter);
 app.use("/api/punishments", punishmentRouter);
 console.log("Mounted medical router at /api/medical");
 
-<<<<<<< HEAD
 app.use("/api/holiday", holidayRouter);
 console.log("Mounted holiday router at /api/holiday");
 
-=======
 
 app.use('/api/payments', paymentRoutes);
 //  إتاحة مجلد الرفع بشكل علني ليتمكن الفرونت إند من عرض صور الإيصالات
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // المسار الرئيسي للتأكد من عمل الـ API
->>>>>>> 4c89e9516d32d50bb6f0dcd675a9cec45a2c869b
 app.get("/", (req, res) => {
   res.json({
     message: "Digilians API",

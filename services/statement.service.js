@@ -1,5 +1,6 @@
 import PermitStudentDirectory from "../models/PermitStudentDirectory.js";
 import PermitAdminAddition from "../models/PermitAdminAddition.js";
+import HolidayRequest from "../models/HolidayRequest.js";
 import User from "../models/User.js";
 import {
   findDirectoryStudentByIdentifier,
@@ -69,6 +70,30 @@ const formatAdditionRecord = (record) => {
 const formatArrivalStatus = (status) =>
   status === "late" ? "متأخر" : "في الموعد";
 
+// دالة مساعدة لفحص حالة طلبات التماس للطالب
+// ترجع "التماس" لو تم قبول الطلب، أو "اعتيادي" لو الطلب قيد الانتظار أو مفيش طلب
+const getPermitRequestStatus = async (studentId) => {
+  const { startOfToday, endOfToday } = getTodayRange();
+
+  // البحث عن طلب اجازة للطالب خلال اليوم
+  const permitRequest = await HolidayRequest.findOne({
+    student: studentId,
+    createdAt: { $gte: startOfToday, $lte: endOfToday },
+    status: { $in: ["approved", "pending"] },
+  }).sort({ createdAt: -1 });
+
+  if (!permitRequest) {
+    return "اعتيادي"; //Default: regular - no permit request or rejected
+  }
+
+  if (permitRequest.status === "approved") {
+    return "التماس"; // Permit approved - show as "التماس"
+  }
+
+  // If status is "pending" - still show as regular until approved
+  return "اعتيادي";
+};
+
 export const addStudentAttendance = async (identifier) => {
   const directoryStudent = await findDirectoryStudentByIdentifier(identifier);
   const { startOfToday, endOfToday } = getTodayRange();
@@ -104,7 +129,7 @@ export const addStudentAttendance = async (identifier) => {
 
 export const getAttendanceRecords = async ({ searchValue = "" } = {}) => {
   const { startOfToday, endOfToday } = getTodayRange();
-  
+
   // Only show today's records in admin table
   const records = await PermitAdminAddition.find({
     arrivedAt: { $gte: startOfToday, $lte: endOfToday },
@@ -125,7 +150,34 @@ export const getAttendanceRecords = async ({ searchValue = "" } = {}) => {
       })
     : records;
 
-  return filtered.map(formatAdditionRecord);
+  // Use Promise.all to check permit status for each record
+  const results = await Promise.all(
+    filtered.map(async (record) => {
+      const student = record.student;
+
+      // فحص حالة طلبات التماس للطالب
+      const permitStatus = await getPermitRequestStatus(student._id);
+
+      return {
+        _id: record._id,
+        id: record._id,
+        name: student.name,
+        email: student.email,
+        militaryId: student.militaryId,
+        nationalId: "-",
+        date: formatDate(record.arrivedAt),
+        time: formatTime(record.arrivedAt),
+        arrivedAt: record.arrivedAt,
+        permitType: record.permitType || "—",
+        status: record.status,
+        deduction: record.deduction,
+        note: record.note || "",
+        requestStatus: permitStatus, // حالة الطلب الحقيقية
+      };
+    })
+  );
+
+  return results;
 };
 
 export const searchAllStudentsWithStatus = async ({ searchValue = "" } = {}) => {
@@ -165,24 +217,30 @@ export const searchAllStudentsWithStatus = async ({ searchValue = "" } = {}) => 
 
   const students = Object.values(uniqueByStudent);
 
-  const results = students.map((record) => {
-    const student = record.student;
+  // استخدام Promise.all للتحقق من حالة طلبات التماس لكل طالب
+  const results = await Promise.all(
+    students.map(async (record) => {
+      const student = record.student;
 
-    return {
-      _id: student._id,
-      name: student.name,
-      email: student.email,
-      militaryId: student.militaryId,
-      inTable: true,
-      arrivalStatus: formatArrivalStatus(record.status),
-      permitType: record.permitType || "—",
-      requestStatus: record.permitType || "—",
-      additionId: record._id,
-      arrivedAt: record.arrivedAt,
-      status: record.status,
-      deduction: record.deduction,
-    };
-  });
+      // فحص حالة طلبات التماس للطالب
+      const permitStatus = await getPermitRequestStatus(student._id);
+
+      return {
+        _id: student._id,
+        name: student.name,
+        email: student.email,
+        militaryId: student.militaryId,
+        inTable: true,
+        arrivalStatus: formatArrivalStatus(record.status),
+        permitType: record.permitType || "—",
+        requestStatus: permitStatus, // استخدام حالة الطلب الحقيقية
+        additionId: record._id,
+        arrivedAt: record.arrivedAt,
+        status: record.status,
+        deduction: record.deduction,
+      };
+    })
+  );
 
   return results;
 };
