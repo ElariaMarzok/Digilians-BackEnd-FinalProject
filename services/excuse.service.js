@@ -1,4 +1,5 @@
 import Excuse from "../models/Excuse.js";
+import mongoose from "mongoose";
 import PermitStudentDirectory from "../models/PermitStudentDirectory.js";
 
 export const createExcuse = async (userId, { title, message, attachments = [] }) => {
@@ -39,8 +40,24 @@ export const getExcuseById = async (id) => {
   return Excuse.findById(id).populate("user responder");
 };
 
-export const respondToExcuse = async (id, adminId, responseText, status = "مُجاب") => {
-  const excuse = await Excuse.findById(id);
+export const respondToExcuse = async (
+  id,
+  adminId,
+  responseText,
+  status = "مُجاب"
+) => {
+  let excuse = null;
+
+  // البحث بالـ ObjectId
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    excuse = await Excuse.findById(id);
+  }
+
+  // لو مش لاقيه ابحث بالرقم العسكري
+  if (!excuse) {
+    excuse = await Excuse.findOne({ militaryId: id });
+  }
+
   if (!excuse) return null;
 
   excuse.response = responseText;
@@ -48,7 +65,21 @@ export const respondToExcuse = async (id, adminId, responseText, status = "مُ�
   excuse.respondedAt = new Date();
   excuse.status = status;
 
+  console.log(
+    `[excuse.service] responding to excuse ${id} with status=${status} by admin=${adminId}`
+  );
+
   await excuse.save();
+
+  console.log(
+    `[excuse.service] saved excuse ${excuse._id} status=${excuse.status} responder=${excuse.responder}`
+  );
 
   return excuse.populate("user responder");
 };
+
+export const clearAllExcuses = async () => {
+  const result = await Excuse.deleteMany({});
+  return { deletedCount: result.deletedCount || 0 };
+};
+

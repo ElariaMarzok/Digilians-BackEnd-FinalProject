@@ -7,12 +7,12 @@ import cors from "cors";
 import connectDB from "./config/db.js";
 import medicalRouter from "./routes/medical.routes.js";
 
-// Ø§Ø³ØªÙŠØ±Ø§Ø¯ Ø§Ù„Ù…Ø³Ø§Ø±Ø§Øª (Routes) Ø§Ù„Ù‚Ø¯ÙŠÙ…Ø© ÙˆØ§Ù„Ø¬Ø¯ÙŠØ¯Ø©
 import authRouter from "./routes/auth.routes.js";
 import profileRouter from "./routes/profile.routes.js";
 import statementRouter from "./routes/statement.routes.js";
 import holidayRouter from "./routes/holiday.routes.js";
 import bookingRouter from "./routes/booking.routes.js";
+import medicalRouter from "./routes/medical.routes.js";
 import paymentRoutes from './routes/paymentRoutes.js';
 import punishmentRouter from "./routes/punishment.routes.js";
 import excuseRouter from "./routes/excuse.routes.js";
@@ -24,27 +24,30 @@ console.log("medicalRouter keys", Object.keys(medicalRouter));
 console.log("excuseRouter type", typeof excuseRouter);
 console.log("excuseRouter keys", excuseRouter ? Object.keys(excuseRouter) : []);
 
+
+
 const app = express();
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      const isLocalhost =
-        !origin ||
-        /^http:\/\/localhost:\d+$/.test(origin) ||
-        /^http:\/\/127\.0\.0\.1:\d+$/.test(origin);
+// app.use(
+//   cors({
+//     origin: (origin, callback) => {
+//       const isLocalhost =
+//         !origin ||
+//         /^http:\/\/localhost:\d+$/.test(origin) ||
+//         /^http:\/\/127\.0\.0\.1:\d+$/.test(origin);
 
-      if (isLocalhost) {
-        callback(null, true);
-        return;
-      }
+//       if (isLocalhost) {
+//         callback(null, true);
+//         return;
+//       }
 
-      callback(new Error("Not allowed by CORS"));
-    },
-    credentials: true,
-  }),
-);
+//       callback(new Error("Not allowed by CORS"));
+//     },
+//     credentials: true,
+//   }),
+// );
 
+app.use(cors({origin: '*'}));
 app.use(express.json());
 
 app.use("/api/auth", authRouter);
@@ -58,16 +61,21 @@ app.use("/api/excuses", excuseRouter);
 console.log("Mounted medical router at /api/medical");
 console.log("Mounted excuse router at /api/excuses");
 
+
 app.use("/api/holiday", holidayRouter);
 console.log("Mounted holiday router at /api/holiday");
 
 app.use("/api/relatives", relativesRouter);
 console.log("Mounted relatives router at /api/relatives");
+app.use("/api/relatives", relativesRouter);
+console.log("Mounted relatives router at /api/relatives");
+
 
 app.use('/api/payments', paymentRoutes);
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // المسار الرئيسي للتأكد من عمل الـ API
+
 app.get("/", (req, res) => {
   res.json({
     message: "Digilians API",
@@ -76,6 +84,7 @@ app.get("/", (req, res) => {
   });
 });
 
+// Debug: list registered routes (safe endpoint)
 app.get('/_debug/routes', (req, res) => {
   try {
     if (!app._router || !app._router.stack) return res.json({ routes: [] });
@@ -92,6 +101,7 @@ app.get('/_debug/routes', (req, res) => {
   }
 });
 
+// التعامل مع المسارات غير الموجودة (404)
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -136,6 +146,7 @@ const connectionTarget = MONGO_URI.includes("127.0.0.1")
 console.log(`ðŸ"Œ Connecting to ${connectionTarget}`);
 
 connectDB(MONGO_URI).then(() => {
+
   const listRoutes = () => {
     try {
       if (!app._router || !app._router.stack) {
@@ -157,6 +168,8 @@ connectDB(MONGO_URI).then(() => {
   };
 
   app.listen(PORT, () => {
+    console.log(`✅ Server running on http://localhost:${PORT}`);
+
     console.log(`âœ… Server running on http://localhost:${PORT}`);
     listRoutes();
   });
