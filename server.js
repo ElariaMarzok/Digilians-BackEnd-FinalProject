@@ -27,25 +27,26 @@ console.log("excuseRouter keys", excuseRouter ? Object.keys(excuseRouter) : []);
 
 const app = express();
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      const isLocalhost =
-        !origin ||
-        /^http:\/\/localhost:\d+$/.test(origin) ||
-        /^http:\/\/127\.0\.0\.1:\d+$/.test(origin);
+// app.use(
+//   cors({
+//     origin: (origin, callback) => {
+//       const isLocalhost =
+//         !origin ||
+//         /^http:\/\/localhost:\d+$/.test(origin) ||
+//         /^http:\/\/127\.0\.0\.1:\d+$/.test(origin);
 
-      if (isLocalhost) {
-        callback(null, true);
-        return;
-      }
+//       if (isLocalhost) {
+//         callback(null, true);
+//         return;
+//       }
 
-      callback(new Error("Not allowed by CORS"));
-    },
-    credentials: true,
-  }),
-);
+//       callback(new Error("Not allowed by CORS"));
+//     },
+//     credentials: true,
+//   }),
+// );
 
+app.use(cors({origin: '*'}));
 app.use(express.json());
 
 app.use("/api/auth", authRouter);
