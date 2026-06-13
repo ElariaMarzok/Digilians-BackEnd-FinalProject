@@ -15,6 +15,9 @@ import {
   searchStudent,
   recordAttendance,
   updateDeduction,
+  getApprovedExcusesController,
+  confirmExcuseController,
+  rejectExcuseController,
 } from "../controllers/statement.controller.js";
 
 const router = Router();
@@ -88,6 +91,30 @@ router.post(
   authMiddleware,
   adminOnlyMiddleware,
   recordAttendance,
+);
+
+// Route for getting all approved excuses
+router.get(
+  "/excuses",
+  authMiddleware,
+  adminOnlyMiddleware,
+  getApprovedExcusesController,
+);
+
+// Route for confirming an excuse and creating attendance record
+router.post(
+  "/excuses/confirm",
+  authMiddleware,
+  adminOnlyMiddleware,
+  confirmExcuseController,
+);
+
+// Route for rejecting an excuse (remove from list without confirming)
+router.post(
+  "/excuses/reject",
+  authMiddleware,
+  adminOnlyMiddleware,
+  rejectExcuseController,
 );
 
 export default router;

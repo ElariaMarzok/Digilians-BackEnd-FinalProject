@@ -1,10 +1,11 @@
-﻿import dotenv from "dotenv";
+import dotenv from "dotenv";
 dotenv.config({ override: true });
 
 import path from 'path';
 import express from "express";
 import cors from "cors";
 import connectDB from "./config/db.js";
+import medicalRouter from "./routes/medical.routes.js";
 
 // Ø§Ø³ØªÙŠØ±Ø§Ø¯ Ø§Ù„Ù…Ø³Ø§Ø±Ø§Øª (Routes) Ø§Ù„Ù‚Ø¯ÙŠÙ…Ø© ÙˆØ§Ù„Ø¬Ø¯ÙŠØ¯Ø©
 import authRouter from "./routes/auth.routes.js";
@@ -60,19 +61,13 @@ console.log("Mounted excuse router at /api/excuses");
 app.use("/api/holiday", holidayRouter);
 console.log("Mounted holiday router at /api/holiday");
 
-<<<<<<< HEAD
-=======
 app.use("/api/relatives", relativesRouter);
 console.log("Mounted relatives router at /api/relatives");
->>>>>>> 5b80f07f404fa7c59e433211bcce93957085bb52
 
 app.use('/api/payments', paymentRoutes);
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
-<<<<<<< HEAD
 // المسار الرئيسي للتأكد من عمل الـ API
-=======
->>>>>>> 5b80f07f404fa7c59e433211bcce93957085bb52
 app.get("/", (req, res) => {
   res.json({
     message: "Digilians API",
@@ -138,7 +133,7 @@ if (!envMongoUri || isDefaultPlaceholder) {
 const connectionTarget = MONGO_URI.includes("127.0.0.1")
   ? "local MongoDB"
   : "remote MongoDB";
-console.log(`ðŸ“Œ Connecting to ${connectionTarget}`);
+console.log(`ðŸ"Œ Connecting to ${connectionTarget}`);
 
 connectDB(MONGO_URI).then(() => {
   const listRoutes = () => {

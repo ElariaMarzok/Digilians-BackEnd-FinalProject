@@ -8,6 +8,9 @@ import {
   deleteAttendanceRecord,
   searchAllStudentsWithStatus,
   clearAllAttendanceRecords,
+  getApprovedExcuses,
+  confirmExcuseAttendance,
+  rejectExcuseAttendance,
 } from "../services/statement.service.js";
 import { addStudentToDirectory, searchStudentByMilitaryId, recordStudentAttendance } from "../services/studentManagement.service.js";
 import { successResponse, errorResponse } from "../utils/response.js";
@@ -213,6 +216,62 @@ export const updateDeduction = async (req, res) => {
     const record = await updateAttendanceDeduction(req.params.id, deduction);
 
     return successResponse(res, 200, "ØªÙ… ØªØ­Ø¯ÙŠØ« Ø§Ù„Ø§Ø¯Ø±Ø§Ø¬Ø© Ø¨Ù†Ø¬Ø§Ø­", { record });
+  } catch (err) {
+    return errorResponse(
+      res,
+      err.statusCode || 500,
+      err.message || "Server error",
+    );
+  }
+};
+
+// Get all approved excuses
+export const getApprovedExcusesController = async (req, res) => {
+  try {
+    const excuses = await getApprovedExcuses();
+    return successResponse(res, 200, "ØªÙ… Ø¬Ù„Ø¨ Ø§Ù„Ø§Ù„ØªÙ…Ø§Ø³Ø§Øª Ø§Ù„Ù…Ù€Ø¬Ø§Ø¨Ø©", { excuses });
+  } catch (err) {
+    return errorResponse(
+      res,
+      err.statusCode || 500,
+      err.message || "Server error",
+    );
+  }
+};
+
+// Confirm an excuse and create attendance record
+export const confirmExcuseController = async (req, res) => {
+  try {
+    const { excuseId } = req.body;
+
+    if (!excuseId) {
+      return errorResponse(res, 400, "ÙŠØ±Ø¬Ù‰ Ø¥Ø¯Ø®Ø§Ù„ Ù…Ø¹Ù„Ù� Ø§Ù„ØªÙ…Ø§Ø³");
+    }
+
+    const record = await confirmExcuseAttendance(excuseId);
+
+    return successResponse(res, 201, "ØªÙ… ØªØ£ÙƒÙŠØ¯ Ø§Ù„Ø­Ø¶ÙˆØ±", { record });
+  } catch (err) {
+    return errorResponse(
+      res,
+      err.statusCode || 500,
+      err.message || "Server error",
+    );
+  }
+};
+
+// Reject an excuse (remove from list without confirming)
+export const rejectExcuseController = async (req, res) => {
+  try {
+    const { excuseId } = req.body;
+
+    if (!excuseId) {
+      return errorResponse(res, 400, "ÙŠØ±Ø¬Ù‰ Ø¥Ø¯Ø®Ø§Ù„ Ù…Ø¹Ù„Ù� Ø§Ù„ØªÙ…Ø§Ø³");
+    }
+
+    await rejectExcuseAttendance(excuseId);
+
+    return successResponse(res, 200, "ØªÙ… Ø±ÙÙ… Ø§Ù„ØªÙ…Ø§Ø³", { deleted: true });
   } catch (err) {
     return errorResponse(
       res,
