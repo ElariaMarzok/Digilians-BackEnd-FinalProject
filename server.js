@@ -14,12 +14,12 @@ import statementRouter from "./routes/statement.routes.js";
 import bookingRouter from "./routes/booking.routes.js";
 
 import medicalRouter from "./routes/medical.routes.js";
-<<<<<<< HEAD
+
 import paymentRoutes from './routes/paymentRoutes.js';
-=======
+
 import punishmentRouter from "./routes/punishment.routes.js";
 
->>>>>>> 124c00fc845d2123488a4c6277e596be149a125d
+
 console.log("medicalRouter type", typeof medicalRouter);
 console.log("medicalRouter keys", Object.keys(medicalRouter));
 

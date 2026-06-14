@@ -1,5 +1,6 @@
 import User from "../models/User.js";
 import PermitStudentDirectory from "../models/PermitStudentDirectory.js";
+import Punishment from "../models/Punishment.model.js";
 
 const formatUserBasicData = (user, directoryEntry = null) => ({
   _id: user._id,
@@ -11,27 +12,49 @@ const formatUserBasicData = (user, directoryEntry = null) => ({
   phoneNumber: user.phoneNumber,
 });
 
-const defaultStudentProfile = (user, directoryEntry) => ({
-  student: formatUserBasicData(user, directoryEntry),
-  department: "",
-  specialization: "",
-  course: "",
-  specializationDuration: "غير محدد",
-  status: "active",
-  attendance: { absenceDays: 0 },
-  grades: {
-    behavior: 100,
-    history: [{ label: "البداية", value: 100 }],
-  },
-  notes: "",
-});
+const defaultStudentProfile = async (user, directoryEntry) => {
+  const militaryId = directoryEntry?.militaryId || "";
+
+  let behaviorGrade = 100;
+  let punishmentHistory = [{ label: "البداية", value: 100 }];
+
+  if (militaryId) {
+    const punishments = await Punishment.find({ militaryNum: militaryId }).sort({ createdAt: 1 });
+
+    let currentGrade = 100;
+    punishments.forEach((p) => {
+      currentGrade = Math.max(0, currentGrade - (p.degree || 0));
+      punishmentHistory.push({
+        label: new Date(p.createdAt).toLocaleDateString("ar-EG"),
+        value: currentGrade,
+        reason: p.violation,
+      });
+    });
+    behaviorGrade = currentGrade;
+  }
+
+  return {
+    student: formatUserBasicData(user, directoryEntry),
+    department: "",
+    specialization: "",
+    course: "",
+    specializationDuration: "غير محدد",
+    status: "active",
+    attendance: { absenceDays: 0 },
+    grades: {
+      behavior: behaviorGrade,
+      history: punishmentHistory,
+    },
+    notes: "",
+  };
+};
 
 export const getOrCreateStudentProfile = async (user) => {
   const directoryEntry = await PermitStudentDirectory.findOne({
     email: user.email,
   });
 
-  return defaultStudentProfile(user, directoryEntry);
+  return await defaultStudentProfile(user, directoryEntry);
 };
 
 export const getOrCreateCommanderProfile = async (user) => ({
@@ -115,7 +138,7 @@ export const getStudentProfileSummaryForCommander = async (studentId) => {
 
   const user = await User.findOne({ email: directoryEntry.email });
 
-  const profile = defaultStudentProfile(
+  const profile = await defaultStudentProfile(
     user || { email: directoryEntry.email, name: directoryEntry.name },
     directoryEntry,
   );
