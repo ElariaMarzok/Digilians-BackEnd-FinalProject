@@ -22,6 +22,8 @@ const ExcuseSchema = new Schema(
     studentEmail: String,
     militaryId: String,
     attachments: [AttachmentSchema],
+    startDate: Date,
+    endDate: Date,
     response: String,
     responder: { type: Schema.Types.ObjectId, ref: "User" },
     respondedAt: Date,
