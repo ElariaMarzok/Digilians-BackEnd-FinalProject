@@ -18,7 +18,7 @@ export const createBooking = async (req, res) => {
       alightingStation,
     })
 
-    return successResponse(res, 201, 'تم إرسال طلب الحجز بنجاح', booking)
+   return res.status(201).json({ success: true, message: 'تم إرسال طلب الحجز بنجاح', data: booking })
   } catch (err) {
     return errorResponse(res, 500, err.message || 'Server error')
   }
@@ -29,7 +29,7 @@ export const getMyBookings = async (req, res) => {
   try {
     const { studentId } = req.params
     const bookings = await Booking.find({ studentId }).sort({ createdAt: -1 })
-    return successResponse(res, 200, 'تم جلب الحجوزات', bookings)
+   return res.status(200).json({ success: true, message: 'تم جلب الحجوزات', data: bookings })
   } catch (err) {
     return errorResponse(res, 500, err.message || 'Server error')
   }
@@ -39,7 +39,7 @@ export const getMyBookings = async (req, res) => {
 export const getAllBookings = async (req, res) => {
   try {
     const bookings = await Booking.find().sort({ createdAt: -1 })
-    return successResponse(res, 200, 'تم جلب كل الحجوزات', bookings)
+    return res.status(200).json({ success: true, message: 'تم جلب كل الحجوزات', data: bookings })
   } catch (err) {
     return errorResponse(res, 500, err.message || 'Server error')
   }

@@ -1,63 +1,41 @@
-import { Router } from "express";
-import authMiddleware from "../middlewares/auth.middlewares.js";
+﻿import { Router } from "express";
+import authMiddleware, { adminOnlyMiddleware } from "../middlewares/auth.middlewares.js";
 import {
-  getOrCreateStudentProfile,
-  getOrCreateCommanderProfile,
-  searchStudentsForCommander,
-  getStudentProfileSummaryForCommander,
-} from "../services/profile.service.js";
-import { successResponse, errorResponse } from "../utils/response.js";
+  getCurrentProfileController,
+  getStudentProfileController,
+  updateStudentProfileController,
+  getAdminProfileController,
+  searchAdminStudentsController,
+  getAdminStudentSummaryController,
+} from "../controllers/profile.controller.js";
 
 const router = Router();
 
-router.get("/me", authMiddleware, async (req, res) => {
-  try {
-    const user = req.user;
-    const profile =
-      user.role === "student"
-        ? await getOrCreateStudentProfile(user)
-        : await getOrCreateCommanderProfile(user);
+router.get("/me", authMiddleware, getCurrentProfileController);
 
-    return successResponse(res, 200, "Profile loaded", { profile });
-  } catch (err) {
-    return errorResponse(
-      res,
-      err.statusCode || 500,
-      err.message || "Server error",
-    );
-  }
-});
+router.get("/student", authMiddleware, getStudentProfileController);
+router.patch("/student", authMiddleware, updateStudentProfileController);
 
-router.get("/students", authMiddleware, async (req, res) => {
-  try {
-    const results = await searchStudentsForCommander({
-      search: req.query.search || "",
-    });
-    return successResponse(res, 200, "Students found", { students: results });
-  } catch (err) {
-    return errorResponse(
-      res,
-      err.statusCode || 500,
-      err.message || "Server error",
-    );
-  }
-});
+router.get("/admin", authMiddleware, adminOnlyMiddleware, getAdminProfileController);
+router.get(
+  "/admin/students/search",
+  authMiddleware,
+  adminOnlyMiddleware,
+  searchAdminStudentsController,
+);
+router.get(
+  "/admin/students/:studentId/summary",
+  authMiddleware,
+  adminOnlyMiddleware,
+  getAdminStudentSummaryController,
+);
 
-router.get("/summary/student/:id", authMiddleware, async (req, res) => {
-  try {
-    const profileSummary = await getStudentProfileSummaryForCommander(
-      req.params.id,
-    );
-    return successResponse(res, 200, "Student profile summary", {
-      profileSummary,
-    });
-  } catch (err) {
-    return errorResponse(
-      res,
-      err.statusCode || 500,
-      err.message || "Server error",
-    );
-  }
-});
+router.get("/students", authMiddleware, adminOnlyMiddleware, searchAdminStudentsController);
+router.get(
+  "/summary/student/:studentId",
+  authMiddleware,
+  adminOnlyMiddleware,
+  getAdminStudentSummaryController,
+);
 
 export default router;

@@ -26,7 +26,7 @@ const OLD_COLLECTIONS = [
 
 const resolveMongoUri = () => {
   const envUri = process.env.MONGO_URI;
-  const isPlaceholder = envUri && envUri.includes("USERNAME:PASSWORD");
+  const isPlaceholder = envUri && (envUri.includes("USERNAME:PASSWORD") || envUri.includes("<"));
   if (envUri && !isPlaceholder) return envUri;
   return "mongodb://127.0.0.1:27017/digilians";
 };
@@ -92,17 +92,18 @@ const setupDatabase = async () => {
       militaryId: student.militaryId,
     });
 
-    console.log(`✅ users + directory: ${student.name} → ${student.email}`);
+console.log(`✅ users + directory: ${student.name} → ${student.email}`);
 
-    if (student.adminAddition) {
-      const isLate = student.adminAddition.status === "late";
-      await PermitAdminAddition.create({
-        student: directoryEntry._id,
-        arrivedAt: buildArrivedAt(student.adminAddition.status),
-        status: student.adminAddition.status,
-        deduction: isLate ? 5 : 0,
-      });
-    }
+    // Don't add attendance records automatically - only when admin manually adds them
+    // if (student.adminAddition) {
+    //   const isLate = student.adminAddition.status === "late";
+    //   await PermitAdminAddition.create({
+    //     student: directoryEntry._id,
+    //     arrivedAt: buildArrivedAt(student.adminAddition.status),
+    //     status: student.adminAddition.status,
+    //     deduction: isLate ? 5 : 0,
+    //   });
+    // }
   }
 
   console.log("\n══════════════════════════════════════════");

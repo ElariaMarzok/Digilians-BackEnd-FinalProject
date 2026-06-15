@@ -19,7 +19,7 @@ const permitAdminAdditionSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["present", "late"],
+      enum: ["present", "late", "excuse"],
       required: true,
     },
     deduction: {
@@ -27,15 +27,19 @@ const permitAdminAdditionSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
-    permitType: {
-      type: String,
-      default: "اعتيادي",
-      trim: true,
-    },
-    note: {
+permitType: {
       type: String,
       default: "",
       trim: true,
+    },
+note: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    hidden: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true },

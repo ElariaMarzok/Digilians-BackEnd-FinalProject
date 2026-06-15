@@ -8,7 +8,9 @@
     "dev": "nodemon server.js",
     "db:setup": "node scripts/setupDatabase.js",
     "seed:students": "node scripts/setupDatabase.js",
-    "seed:admin": "node createAdmin.js"
+    "seed:admin": "node createAdmin.js",
+    "checkDb": "node scripts/checkDb.js",
+    "clear:attendance": "node scripts/clearAttendance.js"
   },
   "repository": {
     "type": "git",
@@ -22,6 +24,7 @@
   "homepage": "https://github.com/Sandy-Magdy/Digilians-BackEnd-FinalProject#readme",
   "description": "Digilians backend with JWT authentication (register, login, logout)",
   "dependencies": {
+    "axios": "^1.17.0",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.6",
     "dotenv": "^16.5.0",
