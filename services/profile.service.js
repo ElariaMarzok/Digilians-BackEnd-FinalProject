@@ -2,8 +2,11 @@
 import Admin from "../models/Admin.js";
 import User from "../models/User.js";
 import PermitStudentDirectory from "../models/PermitStudentDirectory.js";
-import PermitAdminAddition from "../models/PermitAdminAddition.js";
+
 import Punishment from "../models/Punishment.model.js";
+
+import PermitAdminAddition from "../models/PermitAdminAddition.js";
+
 import Relative from "../models/Relative.js";
 import MedicalRecord from "../models/MedicalRecord.js";
 import HolidayRequest from "../models/HolidayRequest.js";
@@ -20,15 +23,54 @@ import {
   escapeRegex,
 } from "../utils/arabicNormalize.js";
 
+
 const DEFAULT_DURATION_LABEL = "غير محدد";
 const DEFAULT_STATUS_LABEL = "نشط";
 const MAX_SEARCH_RESULTS = 50;
 const HIGH_ABSENCE_THRESHOLD = 5;
 
+
+const defaultStudentProfile = async (user, directoryEntry) => {
+  const militaryId = directoryEntry?.militaryId || "";
+
+  let behaviorGrade = 100;
+  let punishmentHistory = [{ label: "البداية", value: 100 }];
+
+  if (militaryId) {
+    const punishments = await Punishment.find({ militaryNum: militaryId }).sort({ createdAt: 1 });
+
+    let currentGrade = 100;
+    punishments.forEach((p) => {
+      currentGrade = Math.max(0, currentGrade - (p.degree || 0));
+      punishmentHistory.push({
+        label: new Date(p.createdAt).toLocaleDateString("ar-EG"),
+        value: currentGrade,
+        reason: p.violation,
+      });
+    });
+    behaviorGrade = currentGrade;
+  }
+
+  return {
+    student: formatUserBasicData(user, directoryEntry),
+    department: "",
+    specialization: "",
+    course: "",
+    specializationDuration: "غير محدد",
+    status: "active",
+    attendance: { absenceDays: 0 },
+    grades: {
+      behavior: behaviorGrade,
+      history: punishmentHistory,
+    },
+    notes: "",
+  };
+};
 const createHttpError = (message, statusCode) => {
   const error = new Error(message);
   error.statusCode = statusCode;
   return error;
+
 };
 
 const toObjectId = (value) => {
@@ -57,6 +99,8 @@ const formatChartMonthLabel = (date) =>
     year: "numeric",
   });
 
+  // return await defaultStudentProfile(user, directoryEntry);
+
 const formatDisplayDate = (date) => {
   if (!date) {
     return "";
@@ -67,6 +111,7 @@ const formatDisplayDate = (date) => {
     month: "2-digit",
     day: "2-digit",
   });
+
 };
 
 const formatAdminRoleLabel = (role = "") => {
@@ -763,6 +808,14 @@ export const getStudentProfileSummaryForAdmin = async (studentId) => {
     throw createHttpError("Student not found", 404);
   }
 
+
+  const user = await User.findOne({ email: directoryEntry.email });
+
+  const profile = await defaultStudentProfile(
+    user || { email: directoryEntry.email, name: directoryEntry.name },
+    directoryEntry,
+  );
+
   const studentUser = await findStudentUser(directoryEntry);
   const [punishmentData, attendanceData, relativesCount, holidays, excuses, paymentData, medicalSummary] =
     await Promise.all([
@@ -774,6 +827,7 @@ export const getStudentProfileSummaryForAdmin = async (studentId) => {
       getPaymentData(studentUser, directoryEntry),
       getMedicalSummary(directoryEntry, studentUser),
     ]);
+
 
   return {
     _id: directoryEntry._id,
@@ -808,6 +862,7 @@ export const getStudentProfileSummaryForAdmin = async (studentId) => {
       pendingPaymentCount: paymentData.pendingPaymentCount,
     },
   };
+
 };
 
 export const getCurrentProfileByRole = async (account) => {
@@ -817,3 +872,4 @@ export const getCurrentProfileByRole = async (account) => {
 
   return getStudentProfile(account);
 };
+

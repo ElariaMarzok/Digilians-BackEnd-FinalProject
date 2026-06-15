@@ -13,11 +13,21 @@ import statementRouter from "./routes/statement.routes.js";
 import holidayRouter from "./routes/holiday.routes.js";
 import bookingRouter from "./routes/booking.routes.js";
 import medicalRouter from "./routes/medical.routes.js";
+
+
 import paymentRoutes from './routes/paymentRoutes.js';
+
+
+
+
 import punishmentRouter from "./routes/punishment.routes.js";
 import excuseRouter from "./routes/excuse.routes.js";
 import relativesRouter from "./routes/relative.routes.js";
 import messagesRouter from "./routes/message.routes.js";
+
+
+
+
 
 console.log("medicalRouter type", typeof medicalRouter);
 console.log("medicalRouter keys", Object.keys(medicalRouter));
