@@ -2,8 +2,14 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 
-const requestsDir = path.join(process.cwd(), "uploads", "requests");
-fs.mkdirSync(requestsDir, { recursive: true });
+const isVercel = process.env.VERCEL === '1' || !!process.env.VERCEL;
+const requestsDir = isVercel 
+  ? path.join("/tmp", "uploads", "requests")
+  : path.join(process.cwd(), "uploads", "requests");
+
+if (!fs.existsSync(requestsDir)) {
+  fs.mkdirSync(requestsDir, { recursive: true });
+}
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
