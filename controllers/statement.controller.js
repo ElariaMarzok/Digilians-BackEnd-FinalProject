@@ -12,7 +12,8 @@ import {
   confirmExcuseAttendance,
   rejectExcuseAttendance,
 } from "../services/statement.service.js";
-import { addStudentToDirectory, searchStudentByMilitaryId, recordStudentAttendance } from "../services/studentManagement.service.js";
+import { addStudentToDirectory, recordStudentAttendance } from "../services/studentManagement.service.js";
+import { findDirectoryStudentByIdentifier } from "../services/studentDirectory.service.js";
 import { successResponse, errorResponse } from "../utils/response.js";
 
 export const addAttendance = async (req, res) => {
@@ -166,12 +167,16 @@ export const createStudent = async (req, res) => {
   }
 };
 
-// Search for a student by military ID
+// Search for a student by identifier (email, name, or military ID)
 export const searchStudent = async (req, res) => {
   try {
-    const { militaryId } = req.body;
+    const { identifier } = req.body;
 
-    const student = await searchStudentByMilitaryId(militaryId);
+    if (!identifier || !String(identifier).trim()) {
+      return errorResponse(res, 400, "ÙŠØ±Ø¬Ù‰ Ø¥Ø¯Ø®Ø§Ù„ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø·Ø§Ù„Ø¨");
+    }
+
+    const student = await findDirectoryStudentByIdentifier(identifier);
 
     return successResponse(res, 200, "ØªÙ… Ø§Ù„Ø¹Ø«ÙˆØ± Ø¹Ù„Ù‰ Ø§Ù„Ø·Ø§Ù„Ø¨", { student });
   } catch (err) {

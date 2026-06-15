@@ -1,9 +1,11 @@
 import PermitStudentDirectory from "../models/PermitStudentDirectory.js";
 import PermitAdminAddition from "../models/PermitAdminAddition.js";
 import Excuse from "../models/Excuse.js";
+import User from "../models/User.js";
 import {
   findDirectoryStudentByIdentifier,
   resolveDirectoryForAccount,
+  ensureStudentInDirectory,
 } from "./studentDirectory.service.js";
 
 // Late hour set to 17 (5 PM) - marks student as late with 5 degree deduction
@@ -214,6 +216,7 @@ export const getAttendanceRecords = async ({ searchValue = "" } = {}) => {
 
 export const searchAllStudentsWithStatus = async ({ searchValue = "" } = {}) => {
   const trimmed = searchValue.trim();
+  console.log("🔍 searchAllStudentsWithStatus called with:", trimmed);
 
   if (!trimmed) {
     return [];
@@ -221,67 +224,86 @@ export const searchAllStudentsWithStatus = async ({ searchValue = "" } = {}) => 
 
   const { startOfToday, endOfToday } = getTodayRange();
 
-  // البحث فقط على طلاب اليوم في جدول التصحيح
-  const additionRecords = await PermitAdminAddition.find({
-    arrivedAt: { $gte: startOfToday, $lte: endOfToday },
-  })
-    .populate("student")
-    .sort({ arrivedAt: -1 });
+  // البحث في جدول الطلاب (permit_student_directory - الداتا بيز)
+  const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-  // تصفية الطلاب اللي عندهم record ومطابقين للبحث
-  const matchedRecords = additionRecords.filter((record) => {
-    const student = record.student;
-    return (
-      student.militaryId.includes(trimmed) ||
-      student.email.toLowerCase().includes(trimmed.toLowerCase()) ||
-      student.name.includes(trimmed)
-    );
+  // Check total students in DB
+  const totalInDB = await PermitStudentDirectory.countDocuments();
+  console.log("📊 Total students in database:", totalInDB);
+
+  // البحث من جدول الطلاب (permit_student_directories - الداتا بيز)
+  const directoryStudents = await PermitStudentDirectory.find({
+    $or: [
+      { email: new RegExp(escapeRegex(trimmed), "i") },
+      { name: { $regex: escapeRegex(trimmed), $options: "i" } },
+      { militaryId: trimmed },
+      { militaryId: { $regex: escapeRegex(trimmed), $options: "i" } },
+    ]
   });
 
-  // إزالة المكررات (أخذ آخر record لكل طالب)
-  const uniqueByStudent = {};
-  matchedRecords.forEach((record) => {
-    const studentId = record.student._id.toString();
-    if (!uniqueByStudent[studentId]) {
-      uniqueByStudent[studentId] = record;
-    }
-  });
+  console.log("📋 Found students:", directoryStudents.length);
 
-  const students = Object.values(uniqueByStudent);
+  // If NOT found in directory, throw error (not found)
+  if (!directoryStudents || directoryStudents.length === 0) {
+    console.log("❌ Student not found in database");
+    const err = new Error("الطالب دا مش موجود في الداتا بيز");
+    err.statusCode = 404;
+    throw err;
+  }
 
-  // Calculate status based on arrival time and excuse for each student
+  // If found in directory, check if they have attendance today and return their data
   const results = await Promise.all(
-    students.map(async (record) => {
-      const student = record.student;
+    directoryStudents.map(async (student) => {
+      // Check if they have attendance record today
+      const todayRecord = await PermitAdminAddition.findOne({
+        student: student._id,
+        arrivedAt: { $gte: startOfToday, $lte: endOfToday },
+      });
 
-      // Check if student has approved excuse for today
-      const hasExcuse = await getExcuseStatus(student._id);
+      let inTable = false;
+      let arrivalStatus = "غير موجود";
+      let additionId = null;
+      let status = null;
+      let deduction = 0;
 
-      let displayStatus, displayDeduction;
-      if (hasExcuse) {
-        displayStatus = "التماس";
-        displayDeduction = 0;
-      } else {
-        const lateInfo = getLateInfo(record.arrivedAt);
-        displayStatus = lateInfo.status === "late" ? "متأخر" : "في الموعد";
-        displayDeduction = lateInfo.deduction;
+      if (todayRecord) {
+        inTable = true;
+        additionId = todayRecord._id;
+        status = todayRecord.status;
+
+        // Check if student has approved excuse for today
+        const hasExcuse = await getExcuseStatus(student._id);
+
+        if (hasExcuse) {
+          arrivalStatus = "التماس";
+          deduction = 0;
+        } else if (todayRecord.status === "late") {
+          arrivalStatus = "متأخر";
+          deduction = 5;
+        } else {
+          arrivalStatus = "في الموعد";
+          deduction = 0;
+        }
       }
 
-      return {
+return {
         _id: student._id,
         name: student.name,
         email: student.email,
         militaryId: student.militaryId,
-        inTable: true,
-        arrivalStatus: displayStatus,
-        additionId: record._id,
-        arrivedAt: record.arrivedAt,
-        status: record.status,
-        deduction: displayDeduction,
+        inTable: inTable,
+        arrivalStatus: arrivalStatus,
+        additionId: additionId,
+        arrivedAt: todayRecord?.arrivedAt || null,
+        status: status,
+        deduction: deduction,
+        userId: student.user || null,
+        time: todayRecord?.arrivedAt ? formatTime(todayRecord.arrivedAt) : "-",
       };
     })
   );
 
+  console.log("✅ Returning results:", results.length);
   return results;
 };
 

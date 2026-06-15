@@ -1,5 +1,6 @@
 import User from "../models/User.js";
 import PermitStudentDirectory from "../models/PermitStudentDirectory.js";
+import { normalizeArabicSearchText, buildArabicFlexibleRegex, escapeRegex } from "../utils/arabicNormalize.js";
 
 export const generateUniqueMilitaryId = async () => {
   for (let attempt = 0; attempt < 50; attempt += 1) {
@@ -107,6 +108,7 @@ export const buildStudentAuthProfile = (user, directoryEntry) => ({
 
 export const findDirectoryStudentByIdentifier = async (identifier) => {
   const trimmed = identifier.trim();
+  console.log("🔍 Searching for:", trimmed);
 
   if (!trimmed) {
     const err = new Error("يرجى إدخال البريد الإلكتروني أو اسم الطالب");
@@ -114,32 +116,70 @@ export const findDirectoryStudentByIdentifier = async (identifier) => {
     throw err;
   }
 
-  const escapeRegex = (value) =>
-    value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  // البحث مباشرة من جدول الطلاب (permit_student_directories)
+  // بدون البحث من جدول الحضور
 
-  let entry = await PermitStudentDirectory.findOne({
-    $or: [
-      { email: trimmed.toLowerCase() },
-      { name: new RegExp(`^${escapeRegex(trimmed)}`, "i") },
-      { militaryId: trimmed },
-    ],
-  });
+  // Check if database has any students
+  const totalCount = await PermitStudentDirectory.countDocuments();
+  console.log("📊 Total students in database:", totalCount);
 
-  if (entry) {
-    return entry;
+  if (totalCount === 0) {
+    const err = new Error("لا يوجد طلاب في الداتا بيز - يرجى إضافة طلاب أولاً");
+    err.statusCode = 404;
+    throw err;
   }
 
-  const user = await User.findOne({
+  // استخدام البحث المرن للأسماء العربية
+  const flexibleRegex = new RegExp("^" + buildArabicFlexibleRegex(trimmed), "i");
+  const containsRegex = new RegExp(escapeRegex(trimmed), "i");
+
+  // أولاً: البحث بالتطابق التام
+  console.log("Step 1: Exact match...");
+  let student = await PermitStudentDirectory.findOne({
     $or: [
       { email: trimmed.toLowerCase() },
-      { name: new RegExp(`^${escapeRegex(trimmed)}`, "i") },
-    ],
+      { militaryId: trimmed }
+    ]
   });
 
-  if (user) {
-    return ensureStudentInDirectory(user);
+  if (student) {
+    console.log("✅ Found by exact match:", student.name);
+    return student;
   }
 
+  // ثانياً: البحث المرن (مع تجاهال الهمزات والتشكيل)
+  console.log("Step 2: Flexible regex...");
+  student = await PermitStudentDirectory.findOne({
+    $or: [
+      { email: containsRegex },
+      { name: flexibleRegex },
+      { name: containsRegex },
+      { militaryId: containsRegex }
+    ]
+  });
+
+  if (student) {
+    console.log("✅ Found by flexible:", student.name);
+    return student;
+  }
+
+  // ثالثاً: البحث باستخدام normalized name
+  console.log("Step 3: Normalized search...");
+  const normalizedSearch = normalizeArabicSearchText(trimmed);
+  const allStudents = await PermitStudentDirectory.find({}).limit(100);
+
+  const fallbackMatch = allStudents.find(s => {
+    const normalizedName = normalizeArabicSearchText(s.name || "");
+    return normalizedName.includes(normalizedSearch);
+  });
+
+  if (fallbackMatch) {
+    console.log("✅ Found by normalized:", fallbackMatch.name);
+    return fallbackMatch;
+  }
+
+  // If not found in database, return not found error
+  console.log("❌ Student not found");
   const err = new Error("الطالب دا مش موجود");
   err.statusCode = 404;
   throw err;

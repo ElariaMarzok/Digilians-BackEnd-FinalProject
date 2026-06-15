@@ -26,7 +26,7 @@ const OLD_COLLECTIONS = [
 
 const resolveMongoUri = () => {
   const envUri = process.env.MONGO_URI;
-  const isPlaceholder = envUri && envUri.includes("USERNAME:PASSWORD");
+  const isPlaceholder = envUri && (envUri.includes("USERNAME:PASSWORD") || envUri.includes("<"));
   if (envUri && !isPlaceholder) return envUri;
   return "mongodb://127.0.0.1:27017/digilians";
 };

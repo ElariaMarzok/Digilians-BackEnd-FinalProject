@@ -77,7 +77,8 @@ router.post(
   createStudent,
 );
 
-// Route for searching student by military ID
+// Route for searching student by identifier (email, name, or military ID)
+// Returns "الطالب دا مش موجود" as error message when student is not found
 router.post(
   "/attendance/search-student",
   authMiddleware,
