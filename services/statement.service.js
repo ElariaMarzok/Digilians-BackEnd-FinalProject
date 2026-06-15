@@ -65,9 +65,9 @@ const formatTime = (date) =>
 const getExcuseStatus = async (studentId) => {
   const { startOfToday, endOfToday } = getTodayRange();
 
-  const approvedExcuse = await Excuse.findOne({
+const approvedExcuse = await Excuse.findOne({
     user: studentId,
-    status: "مُجاب",
+    status: "تم الوصول",
     createdAt: { $gte: startOfToday, $lte: endOfToday },
   });
 
@@ -516,9 +516,9 @@ export const confirmExcuseAttendance = async (excuseId) => {
     arrivedAt: { $gte: startOfToday, $lte: endOfToday },
   });
 
-  if (existingToday) {
+if (existingToday) {
     // Update excuse status but don't create duplicate
-    await Excuse.findByIdAndUpdate(excuseId, { status: "مُجاب" });
+    await Excuse.findByIdAndUpdate(excuseId, { status: "تم الوصول" });
     const err = new Error("الطالب موجود بالفعل في جدول الحضور اليوم");
     err.statusCode = 409;
     throw err;
@@ -539,8 +539,8 @@ export const confirmExcuseAttendance = async (excuseId) => {
 
   const populated = await PermitAdminAddition.findById(record._id).populate("student");
 
-  // Update excuse status to indicate it was confirmed (so it won't show in list again)
-  await Excuse.findByIdAndUpdate(excuseId, { status: "مُجاب" });
+// Update excuse status to indicate it was confirmed (so it won't show in list again)
+  await Excuse.findByIdAndUpdate(excuseId, { status: "تم الوصول" });
 
   return {
     _id: populated._id,
