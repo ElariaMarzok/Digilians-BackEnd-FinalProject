@@ -39,7 +39,22 @@ console.log("excuseRouter keys", excuseRouter ? Object.keys(excuseRouter) : []);
 const app = express();
 
 
-app.use(cors({origin: '*'}));
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://digilians-final-project-three.vercel.app',
+  'https://digilians-final-project.vercel.app'
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin) || origin.includes('localhost')) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Fallback to allowing in case of new Vercel subdomains during project
+    }
+  },
+  credentials: true,
+}));
 app.use(express.json());
 
 app.use("/api/auth", authRouter);
@@ -66,7 +81,8 @@ console.log("Mounted relatives router at /api/relatives");
 
 
 app.use('/api/payments', paymentRoutes);
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+const isVercel = process.env.VERCEL === '1' || !!process.env.VERCEL;
+app.use('/uploads', express.static(isVercel ? '/tmp/uploads' : path.join(process.cwd(), 'uploads')));
 
 // المسار الرئيسي للتأكد من عمل الـ API
 

@@ -2,7 +2,7 @@ import Excuse from "../models/Excuse.js";
 import mongoose from "mongoose";
 import PermitStudentDirectory from "../models/PermitStudentDirectory.js";
 
-export const createExcuse = async (userId, { title, message, attachments = [] }) => {
+export const createExcuse = async (userId, { title, message, startDate, endDate, attachments = [] }) => {
   // try to resolve student's directory entry to copy militaryId and name/email
   const dir = await PermitStudentDirectory.findOne({ user: userId });
 
@@ -10,6 +10,8 @@ export const createExcuse = async (userId, { title, message, attachments = [] })
     user: userId,
     title,
     message,
+    startDate,
+    endDate,
     studentName: dir?.name,
     studentEmail: dir?.email,
     militaryId: dir?.militaryId,

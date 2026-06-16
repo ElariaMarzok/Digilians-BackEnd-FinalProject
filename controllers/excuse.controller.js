@@ -11,7 +11,7 @@ import { successResponse, errorResponse } from "../utils/response.js";
 
 export const createExcuseController = async (req, res) => {
   try {
-    const { title, message, email } = req.body;
+    const { title, message, email, startDate, endDate } = req.body;
     if (!title || !String(title).trim() || !message || !String(message).trim()) {
       return errorResponse(res, 400, "يرجى إدخال عنوان ونص الالتماس");
     }
@@ -37,7 +37,7 @@ export const createExcuseController = async (req, res) => {
       url: `${req.protocol}://${req.get('host')}/uploads/requests/${f.filename}`,
     }));
 
-    const excuse = await createExcuse(userId, { title, message, attachments });
+    const excuse = await createExcuse(userId, { title, message, startDate, endDate, attachments });
     return successResponse(res, 201, "تم إرسال الالتماس بنجاح", { excuse });
   } catch (err) {
     return errorResponse(res, err.statusCode || 500, err.message || "Server error");
