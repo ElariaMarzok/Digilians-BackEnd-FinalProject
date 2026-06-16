@@ -13,18 +13,9 @@ import statementRouter from "./routes/statement.routes.js";
 import holidayRouter from "./routes/holiday.routes.js";
 import bookingRouter from "./routes/booking.routes.js";
 import medicalRouter from "./routes/medical.routes.js";
-<<<<<<< HEAD
-
-import paymentRoutes from './routes/paymentRoutes.js';
-
-import punishmentRouter from "./routes/punishment.routes.js";
-
-
-=======
 
 
 import paymentRoutes from './routes/paymentRoutes.js';
-
 
 
 
@@ -37,7 +28,7 @@ import messagesRouter from "./routes/message.routes.js";
 
 
 
->>>>>>> 2458ad59ce28552df113dbdd9939645efa9dfdf0
+
 console.log("medicalRouter type", typeof medicalRouter);
 console.log("medicalRouter keys", Object.keys(medicalRouter));
 console.log("excuseRouter type", typeof excuseRouter);
@@ -47,24 +38,6 @@ console.log("excuseRouter keys", excuseRouter ? Object.keys(excuseRouter) : []);
 
 const app = express();
 
-// app.use(
-//   cors({
-//     origin: (origin, callback) => {
-//       const isLocalhost =
-//         !origin ||
-//         /^http:\/\/localhost:\d+$/.test(origin) ||
-//         /^http:\/\/127\.0\.0\.1:\d+$/.test(origin);
-
-//       if (isLocalhost) {
-//         callback(null, true);
-//         return;
-//       }
-
-//       callback(new Error("Not allowed by CORS"));
-//     },
-//     credentials: true,
-//   }),
-// );
 
 app.use(cors({origin: '*'}));
 app.use(express.json());
@@ -73,24 +46,14 @@ app.use("/api/auth", authRouter);
 app.use("/api/profile", profileRouter);
 app.use("/api/messages", messagesRouter);
 app.use("/api/statement", statementRouter);
-<<<<<<< HEAD
-// <<<<<<< HEAD
 
-// =======
-// <<<<<<< HEAD
 app.use("/api/booking", bookingRouter);
-// =======
-// >>>>>>> 124c00fc845d2123488a4c6277e596be149a125d
-=======
-app.use("/api/booking", bookingRouter);
->>>>>>> 2458ad59ce28552df113dbdd9939645efa9dfdf0
+
 app.use("/api/medical", medicalRouter);
 app.use("/api/punishments", punishmentRouter);
 app.use("/api/excuses", excuseRouter);
 console.log("Mounted medical router at /api/medical");
-<<<<<<< HEAD
-// >>>>>>> 66c2e72d5e784da99439e865a47dddf9c82ace62
-=======
+
 console.log("Mounted excuse router at /api/excuses");
 
 
@@ -99,10 +62,8 @@ console.log("Mounted holiday router at /api/holiday");
 
 app.use("/api/relatives", relativesRouter);
 console.log("Mounted relatives router at /api/relatives");
-app.use("/api/relatives", relativesRouter);
 console.log("Mounted relatives router at /api/relatives");
 
->>>>>>> 2458ad59ce28552df113dbdd9939645efa9dfdf0
 
 app.use('/api/payments', paymentRoutes);
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
