@@ -6,6 +6,7 @@ import authMiddleware, { adminOnlyMiddleware } from '../middlewares/auth.middlew
 import {
   getMyPayments,
   uploadPaymentReceipt,
+  uploadPaymentReceiptBase64,
   getAllPaymentsForAdmin,
   verifyStudentPayment
 } from '../controllers/paymentController.js';
@@ -50,6 +51,7 @@ const upload = multer({
 
 // 📌 مسارات الطالب
 router.get('/my-payments', authMiddleware, getMyPayments);
+router.post('/upload-receipt-base64', authMiddleware, uploadPaymentReceiptBase64);
 
 // 📌 مسار رفع الإيصال مع صيد أخطاء Multer الذكي لعدم حدوث 404 أو تعليق السيرفر
 router.post('/upload-receipt', authMiddleware, (req, res, next) => {

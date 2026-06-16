@@ -247,3 +247,47 @@ export const verifyStudentPayment = async (req, res) => {
     return res.status(500).json({ success: false, message: "حدث خطأ." });
   }
 };
+
+// 5. رفع إيصال شهر معين بصيغة Base64 لحل مشكلة Vercel Ephemeral Filesystem
+export const uploadPaymentReceiptBase64 = async (req, res) => {
+  try {
+    const { monthId, receiptBase64 } = req.body;
+    const userId = req.user?._id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "مستخدم غير مصرح به." });
+    }
+    if (!receiptBase64) {
+      return res.status(400).json({ success: false, message: "يرجى إرفاق ملف الإيصال." });
+    }
+    if (!monthId) {
+      return res.status(400).json({ success: false, message: "معرّف الشهر غير موجود." });
+    }
+
+    const userObjectId = userId instanceof mongoose.Types.ObjectId 
+      ? userId 
+      : new mongoose.Types.ObjectId(userId);
+
+    const paymentRecord = await StudentPayment.findOne({ user: userObjectId });
+    if (!paymentRecord) {
+      return res.status(404).json({ success: false, message: "سجل المدفوعات غير موجود." });
+    }
+
+    let month = paymentRecord.months.id(new mongoose.Types.ObjectId(monthId));
+    if (!month) {
+      month = paymentRecord.months.find(m => m._id.toString() === monthId);
+    }
+    if (!month) {
+      return res.status(404).json({ success: false, message: "الشهر المحدد غير موجود." });
+    }
+
+    month.status = "under_review";
+    month.receiptUrl = receiptBase64;
+    month.updatedAt = new Date();
+
+    await paymentRecord.save();
+    return res.status(200).json({ success: true, message: "تم رفع الإيصال بنجاح وهو تحت المراجعة." });
+  } catch (error) {
+    console.error("Error uploading base64 receipt:", error);
+    return res.status(500).json({ success: false, message: `حدث خطأ أثناء رفع الإيصال: ${error.message}` });
+  }
+};
