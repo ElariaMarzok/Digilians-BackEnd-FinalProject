@@ -4,11 +4,32 @@ import Excuse from "../models/Excuse.js";
 import { generateUniqueMilitaryId } from "./studentDirectory.service.js";
 
 const getTodayRange = () => {
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
+  const now = new Date();
+  const formatObj = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Africa/Cairo",
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    second: "numeric",
+    hour12: false,
+  });
+  const partsNow = formatObj.formatToParts(now);
+  const mapNow = Object.fromEntries(partsNow.map((p) => [p.type, p.value]));
 
-  const endOfToday = new Date();
-  endOfToday.setHours(23, 59, 59, 999);
+  const year = parseInt(mapNow.year, 10);
+  const month = parseInt(mapNow.month, 10) - 1; // 0-indexed month
+  const day = parseInt(mapNow.day, 10);
+  const hour = parseInt(mapNow.hour, 10);
+  const minute = parseInt(mapNow.minute, 10);
+  const second = parseInt(mapNow.second, 10);
+
+  const cairoAsUTC = Date.UTC(year, month, day, hour, minute, second);
+  const offset = cairoAsUTC - now.getTime(); // Egypt offset in ms
+
+  const startOfToday = new Date(Date.UTC(year, month, day, 0, 0, 0, 0) - offset);
+  const endOfToday = new Date(Date.UTC(year, month, day, 23, 59, 59, 999) - offset);
 
   return { startOfToday, endOfToday };
 };
@@ -166,7 +187,13 @@ if (isApprovedExcuse) {
     // Before 5 PM = present (في الموعد), no deduction
     // After 5 PM = late (متأخر), 5 degrees deduction
     const arrivedAt = new Date();
-    const isLate = arrivedAt.getHours() >= 17;
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: "Africa/Cairo",
+      hour: "numeric",
+      hour12: false,
+    });
+    const hour = parseInt(formatter.format(arrivedAt), 10);
+    const isLate = hour >= 17;
     status = isLate ? "late" : "present";
     deduction = isLate ? 5 : 0;
   }

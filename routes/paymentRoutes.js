@@ -6,6 +6,7 @@ import authMiddleware, { adminOnlyMiddleware } from '../middlewares/auth.middlew
 import {
   getMyPayments,
   uploadPaymentReceipt,
+  uploadPaymentReceiptBase64,
   getAllPaymentsForAdmin,
   verifyStudentPayment
 } from '../controllers/paymentController.js';
@@ -13,13 +14,17 @@ import {
 const router = express.Router();
 
 // 📂 التأكد من أن مجلد الحفظ موجود عشان السيرفر ما يضربش
-const dir = './uploads/receipts/';
+const isVercel = process.env.VERCEL === '1' || !!process.env.VERCEL;
+const dir = isVercel 
+  ? path.join('/tmp', 'uploads', 'receipts') 
+  : path.join(process.cwd(), 'uploads', 'receipts');
+
 if (!fs.existsSync(dir)){
     fs.mkdirSync(dir, { recursive: true });
 }
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, 'uploads/receipts/'),
+  destination: (req, file, cb) => cb(null, dir),
   filename: (req, file, cb) => {
     const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, file.fieldname + '-' + unique + path.extname(file.originalname));
@@ -46,6 +51,7 @@ const upload = multer({
 
 // 📌 مسارات الطالب
 router.get('/my-payments', authMiddleware, getMyPayments);
+router.post('/upload-receipt-base64', authMiddleware, uploadPaymentReceiptBase64);
 
 // 📌 مسار رفع الإيصال مع صيد أخطاء Multer الذكي لعدم حدوث 404 أو تعليق السيرفر
 router.post('/upload-receipt', authMiddleware, (req, res, next) => {
