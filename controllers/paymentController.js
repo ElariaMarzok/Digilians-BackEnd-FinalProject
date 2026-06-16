@@ -146,7 +146,7 @@ export const uploadPaymentReceipt = async (req, res) => {
 
   } catch (error) {
     console.error("Error uploading receipt:", error);
-    return res.status(500).json({ success: false, message: "حدث خطأ أثناء رفع الإيصال." });
+    return res.status(500).json({ success: false, message: `حدث خطأ أثناء رفع الإيصال: ${error.message}` });
   }
 };
 
