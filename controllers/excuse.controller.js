@@ -29,13 +29,24 @@ export const createExcuseController = async (req, res) => {
     }
 
     const files = req.files || [];
-    const attachments = files.map((f) => ({
-      filename: f.filename,
-      originalName: f.originalname,
-      mimetype: f.mimetype,
-      size: f.size,
-      url: `${req.protocol}://${req.get('host')}/uploads/requests/${f.filename}`,
-    }));
+    let attachments = [];
+    if (files.length > 0) {
+      attachments = files.map((f) => ({
+        filename: f.filename,
+        originalName: f.originalname,
+        mimetype: f.mimetype,
+        size: f.size,
+        url: `${req.protocol}://${req.get('host')}/uploads/requests/${f.filename}`,
+      }));
+    } else if (req.body.attachments && Array.isArray(req.body.attachments)) {
+      attachments = req.body.attachments.map((a) => ({
+        filename: a.filename,
+        originalName: a.originalName || a.filename,
+        mimetype: a.mimetype,
+        size: a.size || 0,
+        url: a.base64 || a.url,
+      }));
+    }
 
     const excuse = await createExcuse(userId, { title, message, startDate, endDate, attachments });
     return successResponse(res, 201, "تم إرسال الالتماس بنجاح", { excuse });
