@@ -32,7 +32,6 @@ const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 // Unified today range function - uses Egypt timezone
 const getTodayRange = () => {
-  // Get current time in Egypt timezone
   const now = new Date();
   const nowStr = now.toLocaleString("en-US", { timeZone: "Africa/Cairo" });
   const nowEgypt = new Date(nowStr);
@@ -41,8 +40,10 @@ const getTodayRange = () => {
   const month = nowEgypt.getMonth();
   const day = nowEgypt.getDate();
 
-  const startOfToday = new Date(year, month, day, 0, 0, 0, 0);
-  const endOfToday = new Date(year, month, day, 23, 59, 59, 999);
+  const offset = nowEgypt.getTime() - now.getTime(); // difference in ms (e.g. +3 hours)
+
+  const startOfToday = new Date(Date.UTC(year, month, day, 0, 0, 0, 0) - offset);
+  const endOfToday = new Date(Date.UTC(year, month, day, 23, 59, 59, 999) - offset);
 
   return { startOfToday, endOfToday };
 };
@@ -161,8 +162,7 @@ export const addStudentAttendance = async (identifier) => {
   }
 
   // Use Egypt timezone for arrival time
-  const now = new Date();
-  const arrivedAt = new Date(now.toLocaleString("en-US", { timeZone: "Africa/Cairo" }));
+  const arrivedAt = new Date();
 
   // Calculate status based on arrival time
   // Before 5 PM = present (في الموعد), no deduction
@@ -547,8 +547,7 @@ if (existingToday) {
   }
 
   // Get current time in Egypt timezone
-  const now = new Date();
-  const arrivedAt = new Date(now.toLocaleString("en-US", { timeZone: "Africa/Cairo" }));
+  const arrivedAt = new Date();
 
   // Create attendance record (status: present, no deduction)
   const record = await PermitAdminAddition.create({

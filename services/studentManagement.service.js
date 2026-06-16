@@ -4,11 +4,18 @@ import Excuse from "../models/Excuse.js";
 import { generateUniqueMilitaryId } from "./studentDirectory.service.js";
 
 const getTodayRange = () => {
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
+  const now = new Date();
+  const nowStr = now.toLocaleString("en-US", { timeZone: "Africa/Cairo" });
+  const nowEgypt = new Date(nowStr);
 
-  const endOfToday = new Date();
-  endOfToday.setHours(23, 59, 59, 999);
+  const year = nowEgypt.getFullYear();
+  const month = nowEgypt.getMonth();
+  const day = nowEgypt.getDate();
+
+  const offset = nowEgypt.getTime() - now.getTime(); // Egypt offset in ms
+
+  const startOfToday = new Date(Date.UTC(year, month, day, 0, 0, 0, 0) - offset);
+  const endOfToday = new Date(Date.UTC(year, month, day, 23, 59, 59, 999) - offset);
 
   return { startOfToday, endOfToday };
 };
@@ -166,7 +173,9 @@ if (isApprovedExcuse) {
     // Before 5 PM = present (في الموعد), no deduction
     // After 5 PM = late (متأخر), 5 degrees deduction
     const arrivedAt = new Date();
-    const isLate = arrivedAt.getHours() >= 17;
+    const arrivedAtEgyptStr = arrivedAt.toLocaleString("en-US", { timeZone: "Africa/Cairo" });
+    const arrivedAtEgypt = new Date(arrivedAtEgyptStr);
+    const isLate = arrivedAtEgypt.getHours() >= 17;
     status = isLate ? "late" : "present";
     deduction = isLate ? 5 : 0;
   }
