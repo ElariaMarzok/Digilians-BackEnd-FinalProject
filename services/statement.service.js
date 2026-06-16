@@ -10,7 +10,7 @@ import {
 
 // Late hour set to 17 (5 PM) - marks student as late with 5 degree deduction
 const LATE_HOUR = 17;
-const LATE_DEDUCTION = 5; // 5 degree deduction for late arrival
+const LATE_DEDUCTION = 6; // 5 degree deduction for late arrival
 
 // Helper to check if a date is today (using Egypt timezone)
 const isToday = (date) => {
