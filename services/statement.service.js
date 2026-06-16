@@ -14,18 +14,8 @@ const LATE_DEDUCTION = 5; // 5 degree deduction for late arrival
 
 // Helper to check if a date is today (using Egypt timezone)
 const isToday = (date) => {
-  const now = new Date();
-  const todayStr = now.toLocaleString("en-US", { timeZone: "Africa/Cairo" });
-  const today = new Date(todayStr);
-
-  const dateStr = date.toLocaleString("en-US", { timeZone: "Africa/Cairo" });
-  const dateLocal = new Date(dateStr);
-
-  return (
-    dateLocal.getDate() === today.getDate() &&
-    dateLocal.getMonth() === today.getMonth() &&
-    dateLocal.getFullYear() === today.getFullYear()
-  );
+  const { startOfToday, endOfToday } = getTodayRange();
+  return date >= startOfToday && date <= endOfToday;
 };
 
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -33,14 +23,28 @@ const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 // Unified today range function - uses Egypt timezone
 const getTodayRange = () => {
   const now = new Date();
-  const nowStr = now.toLocaleString("en-US", { timeZone: "Africa/Cairo" });
-  const nowEgypt = new Date(nowStr);
+  const formatObj = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Africa/Cairo",
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    second: "numeric",
+    hour12: false,
+  });
+  const partsNow = formatObj.formatToParts(now);
+  const mapNow = Object.fromEntries(partsNow.map((p) => [p.type, p.value]));
 
-  const year = nowEgypt.getFullYear();
-  const month = nowEgypt.getMonth();
-  const day = nowEgypt.getDate();
+  const year = parseInt(mapNow.year, 10);
+  const month = parseInt(mapNow.month, 10) - 1; // 0-indexed month
+  const day = parseInt(mapNow.day, 10);
+  const hour = parseInt(mapNow.hour, 10);
+  const minute = parseInt(mapNow.minute, 10);
+  const second = parseInt(mapNow.second, 10);
 
-  const offset = nowEgypt.getTime() - now.getTime(); // difference in ms (e.g. +3 hours)
+  const cairoAsUTC = Date.UTC(year, month, day, hour, minute, second);
+  const offset = cairoAsUTC - now.getTime(); // Egypt offset in ms (handles DST dynamically)
 
   const startOfToday = new Date(Date.UTC(year, month, day, 0, 0, 0, 0) - offset);
   const endOfToday = new Date(Date.UTC(year, month, day, 23, 59, 59, 999) - offset);
@@ -79,26 +83,17 @@ const approvedExcuse = await Excuse.findOne({
 
 // Check if a date is today (using Egypt timezone)
 const isDateToday = (date) => {
-  const dateStr = date.toLocaleString("en-US", { timeZone: "Africa/Cairo" });
-  const dateLocal = new Date(dateStr);
-
-  const now = new Date();
-  const nowStr = now.toLocaleString("en-US", { timeZone: "Africa/Cairo" });
-  const nowLocal = new Date(nowStr);
-
-  return (
-    dateLocal.getDate() === nowLocal.getDate() &&
-    dateLocal.getMonth() === nowLocal.getMonth() &&
-    dateLocal.getFullYear() === nowLocal.getFullYear()
-  );
+  const { startOfToday, endOfToday } = getTodayRange();
+  return date >= startOfToday && date <= endOfToday;
 };
 
 const getLateInfo = (arrivedAt) => {
-  // Convert to Egypt timezone (UTC+3 summer / UTC+2 winter)
-  // Using toLocaleString to get the local time in Cairo
-  const localTimeStr = arrivedAt.toLocaleString("en-US", { timeZone: "Africa/Cairo" });
-  const localDate = new Date(localTimeStr);
-  const hour = localDate.getHours();
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Africa/Cairo",
+    hour: "numeric",
+    hour12: false,
+  });
+  const hour = parseInt(formatter.format(arrivedAt), 10);
   const isLate = hour >= LATE_HOUR;
 
   return {

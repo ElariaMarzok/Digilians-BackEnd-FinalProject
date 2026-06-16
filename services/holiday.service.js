@@ -6,7 +6,8 @@ const formatDate = (date) =>
   date.toLocaleDateString("ar-EG", {
     year: "numeric",
     month: "2-digit",
-    day: "2-digit"
+    day: "2-digit",
+    timeZone: "Africa/Cairo"
   });
 
 const formatHolidayRecord = (record, student) => ({

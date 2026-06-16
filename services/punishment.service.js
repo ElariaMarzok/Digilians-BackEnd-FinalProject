@@ -136,6 +136,7 @@ export async function getAdminWarningSummary() {
             year: "numeric",
             month: "2-digit",
             day: "2-digit",
+            timeZone: "Africa/Cairo",
           })
         : UNAVAILABLE_LABEL;
       current.latestViolation =

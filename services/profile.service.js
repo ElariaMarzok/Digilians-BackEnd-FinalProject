@@ -1,4 +1,4 @@
-﻿import mongoose from "mongoose";
+import mongoose from "mongoose";
 import Admin from "../models/Admin.js";
 import User from "../models/User.js";
 import PermitStudentDirectory from "../models/PermitStudentDirectory.js";
@@ -43,7 +43,7 @@ const defaultStudentProfile = async (user, directoryEntry) => {
     punishments.forEach((p) => {
       currentGrade = Math.max(0, currentGrade - (p.degree || 0));
       punishmentHistory.push({
-        label: new Date(p.createdAt).toLocaleDateString("ar-EG"),
+        label: new Date(p.createdAt).toLocaleDateString("ar-EG", { timeZone: "Africa/Cairo" }),
         value: currentGrade,
         reason: p.violation,
       });
@@ -97,6 +97,7 @@ const formatChartMonthLabel = (date) =>
   new Date(date).toLocaleDateString("ar-EG", {
     month: "short",
     year: "numeric",
+    timeZone: "Africa/Cairo",
   });
 
   // return await defaultStudentProfile(user, directoryEntry);
@@ -110,6 +111,7 @@ const formatDisplayDate = (date) => {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
+    timeZone: "Africa/Cairo",
   });
 
 };
